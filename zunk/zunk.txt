@@ -1,0 +1,728 @@
+------------------------------------ *DEFAULT* Open File {/htdocs/mouthe-vn/moithue/wp-content/themes/houzez/single-property.php} ---------------------------
+
+<?php 
+global $post, $hide_fields, $top_area, $property_layout, $map_street_view, $loggedin_to_view;
+
+$single_top_area = get_post_meta( get_the_ID(), 'fave_single_top_area', true );
+$single_content_area = get_post_meta( get_the_ID(), 'fave_single_content_area', true );
+$map_street_view = get_post_meta( get_the_ID(), 'fave_property_map_street_view', true );
+$loggedin_to_view = get_post_meta( get_the_ID(), 'fave_loggedintoview', true );
+$property_live_status = get_post_status();
+$hide_fields = houzez_option('hide_detail_prop_fields');
+houzez_count_property_views( $post->ID );
+
+$enable_disclaimer = houzez_option('enable_disclaimer', 1);
+$global_disclaimer = houzez_option('property_disclaimer');
+$property_disclaimer = get_post_meta( get_the_ID(), 'fave_property_disclaimer', true );
+
+if( !empty(  $property_disclaimer ) ) {
+    $global_disclaimer = $property_disclaimer;
+}
+
+if( ( $property_live_status == 'on_hold' ) && ( $post->post_author != get_current_user_id() ) ) {
+    wp_redirect(  home_url() );
+}
+
+$is_sticky = '';
+$sticky_sidebar = houzez_option('sticky_sidebar');
+
+if( isset( $sticky_sidebar['single_property'] ) && $sticky_sidebar['single_property'] != 0 ) { 
+    $is_sticky = 'houzez_sticky'; 
+}
+
+$is_full_width = houzez_option('is_full_width');
+$top_area = houzez_option('prop-top-area');
+$property_layout = houzez_option('prop-content-layout');
+
+if(isset($_GET['is_full_width'])) {
+    $is_full_width = 1;
+}
+
+if($is_full_width == 1) {
+    $content_classes = 'col-lg-12 col-md-12 bt-full-width-content-wrap';
+} else {
+    $content_classes = 'col-lg-8 col-md-12 bt-content-wrap';
+}
+
+if( !empty( $single_top_area ) && $single_top_area != 'global' ) {
+    $top_area = $single_top_area;
+}
+
+if( !empty( $single_content_area ) && $single_content_area != 'global' ) {
+    $property_layout = $single_content_area;
+}
+
+/* For demo purpose only */
+if( isset( $_GET['s_top'] ) ) {
+    $top_area = $_GET['s_top'];
+}
+if( isset( $_GET['s_layout'] ) ) {
+    $property_layout = $_GET['s_layout'];
+}
+
+$layout_class = '';
+if( $property_layout == 'minimal' ) {
+    $layout_class = "content-wrap-style-minimal";
+} else if( $property_layout == 'boxed' ) {
+    $layout_class = "content-wrap-style-boxed";
+}
+
+get_header();
+
+if(!function_exists('houzez_check_is_elementor')) {
+    function elementor_theme_do_location($X) {}
+}
+
+if( houzez_check_is_elementor() && ( ! function_exists( 'elementor_theme_do_location' ) || ! elementor_theme_do_location( 'single' ) ) ) {
+
+    while ( have_posts() ) : the_post();
+
+        the_content();
+
+    endwhile;
+
+} else {
+
+ 
+if ( ! function_exists( 'elementor_theme_do_location' ) || ! elementor_theme_do_location( 'single' ) ) { 
+
+    if( function_exists('fts_single_listing_enabled') && fts_single_listing_enabled() ) {
+        do_action('houzez_single_listing');
+
+    } else {     
+
+        if( have_posts() ): while( have_posts() ): the_post(); ?>
+            
+            <section class="content-wrap property-wrap property-detail-<?php echo esc_attr($top_area); ?> <?php echo esc_attr($layout_class); ?>">
+                <?php 
+                get_template_part('property-details/navigation'); 
+
+                if($top_area != 'v5' && $top_area != 'v2') {
+                    get_template_part('property-details/property-title'); 
+                }
+
+
+                if( $loggedin_to_view == 1 && !is_user_logged_in()) {
+
+                    get_template_part( 'property-details/partials/login_required');
+
+                } else if( get_post_status($post->ID) == 'expired' ) {
+
+                    get_template_part( 'property-details/partials/expired');
+
+                } else {
+
+                    if($top_area == 'v1') {
+                        get_template_part('property-details/top-area-v1');
+
+                    } elseif($top_area == 'v2') {
+                        get_template_part('property-details/top-area-v2');
+
+                    } elseif( ($top_area == 'v3' || $top_area == 'v4') && $property_layout == 'v2' ) {
+                        echo '<div class="container">';
+                        get_template_part('property-details/top-area-v3-4');
+                        echo '</div>';
+
+                    } elseif($top_area == 'v5') {
+                        get_template_part('property-details/top-area-v5');
+
+                    } elseif($top_area == 'v6') {
+                        get_template_part('property-details/top-area-v6');
+
+                    } elseif($top_area == 'v7') {
+                        get_template_part('property-details/top-area-v7');
+
+                    }
+                    
+                    if( $property_layout == 'v2' ) { ?>
+                    
+                    <div class="property-view full-width-property-view">
+                        <?php get_template_part('property-details/mobile-view'); ?>
+                        <?php get_template_part( 'property-details/single-property-luxury-homes'); ?>
+                    </div>
+
+                    <?php if( !empty($global_disclaimer) && $enable_disclaimer ) { ?>
+                    <div class="property-disclaimer">
+                        <?php echo $global_disclaimer; ?>
+                    </div>
+                    <?php } ?>
+
+                <?php } else { ?>
+
+                <div class="container">
+                    <?php
+                    if($top_area == 'v4') {
+                        get_template_part('property-details/top-area-v3-4');
+                    } 
+                    ?>
+                    <div class="row">
+                        <div class="<?php echo esc_attr($content_classes); ?>">
+                            <?php
+                            if($top_area == 'v3') {
+                                get_template_part('property-details/top-area-v3-4');
+                            } 
+                            ?>                   
+                            <div class="property-view">
+
+                                <?php get_template_part('property-details/mobile-view'); ?>
+
+                                <?php
+                                if( $property_layout == 'tabs' ) {
+                                    get_template_part( 'property-details/single-property', 'tabs');
+                                } else if( $property_layout == 'tabs-vertical' ) {
+                                    get_template_part( 'property-details/single-property', 'tabs-vertical');
+                                } else {
+                                    get_template_part( 'property-details/single-property', 'simple');
+                                }
+
+                                if( houzez_option('enable_next_prev_prop') ) {
+                                    get_template_part('property-details/next-prev');
+                                }
+                                ?>
+                                
+                            </div><!-- property-view -->
+                        </div><!-- bt-content-wrap -->
+
+                        <?php if($is_full_width != 1) { ?>
+                        <div class="col-lg-4 col-md-12 bt-sidebar-wrap <?php echo esc_attr($is_sticky); ?>">
+                            <?php get_sidebar('property'); ?>
+                        </div><!-- bt-sidebar-wrap -->
+                        <?php } ?>
+                    </div><!-- row -->
+
+                    <?php if( !empty($global_disclaimer) && $enable_disclaimer ) { ?>
+                    <div class="property-disclaimer">
+                        <?php echo $global_disclaimer; ?>
+                    </div>
+                    <?php } ?>
+
+                </div><!-- container -->
+
+                    <?php } 
+                } // end loggedIN?>
+
+            </section><!-- listing-wrap -->    
+
+        <?php endwhile; endif; 
+    } // <!-- end fts_single_listing_enabled else condition -->
+ } // <!-- end elementor location -->
+} ?> <!-- end houzez_check_is_elementor -->
+
+
+
+<!--AppsZone Customized-->
+<!--AppsZone Customized-->
+<!--AppsZone Customized-->
+<!--AppsZone Customized-->
+<!--AppsZone Customized-->
+<!--AppsZone Customized-->
+<!--What This Code Does?-->
+<!--1. Retrieves the assigned agent or agency.-->
+<!--2. Displays their name and email under the listing details-->
+
+<?php
+$assigned_user_id = get_post_meta(get_the_ID(), 'assigned_manager', true);
+if ($assigned_user_id) {
+    $user_info = get_userdata($assigned_user_id);
+    if ($user_info) {
+        echo '<div class="assigned-manager">';
+        echo '<h4>Assigned Manager</h4>';
+        echo '<p>' . esc_html($user_info->display_name) . '</p>';
+        echo '<p>Email: ' . esc_html($user_info->user_email) . '</p>';
+        echo '</div>';
+    }
+}
+?>
+
+
+
+
+
+
+<!--Modify the Frontend Template File-->
+
+<?php
+$assigned_user_id = get_post_meta(get_the_ID(), 'assigned_manager', true);
+if ($assigned_user_id) {
+    $user_info = get_userdata($assigned_user_id);
+    if ($user_info) {
+        echo '<div class="assigned-manager">';
+        echo '<h4>Assigned Manager</h4>';
+        echo '<p>' . esc_html($user_info->display_name) . '</p>';
+        echo '<p>Email: ' . esc_html($user_info->user_email) . '</p>';
+        echo '</div>';
+    }
+}
+?>
+
+<!--End AppsZone Customized 09 Feb 2025-->
+
+
+
+
+
+
+<h1>Our Property</h1>
+
+<script>
+	console.log(<?= json_encode(compact('assigned_user_id', 'assigned_user_id')) ?>);
+</script>
+
+
+
+<?php get_footer(); ?>
+------------------------------------ Close File {/htdocs/mouthe-vn/moithue/wp-content/themes/houzez/single-property.php} ------------------------------------
+
+
+            <!-- <svg xmlns="http://www.w3.org/2000/svg" class="gear-icon gear-right" viewBox="0 0 640 512"><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.-- ><path d="M308.5 135.3c7.1-6.3 9.9-16.2 6.2-25c-2.3-5.3-4.8-10.5-7.6-15.5L304 89.4c-3-5-6.3-9.9-9.8-14.6c-5.7-7.6-15.7-10.1-24.7-7.1l-28.2 9.3c-10.7-8.8-23-16-36.2-20.9L199 27.1c-1.9-9.3-9.1-16.7-18.5-17.8C173.9 8.4 167.2 8 160.4 8l-.7 0c-6.8 0-13.5 .4-20.1 1.2c-9.4 1.1-16.6 8.6-18.5 17.8L115 56.1c-13.3 5-25.5 12.1-36.2 20.9L50.5 67.8c-9-3-19-.5-24.7 7.1c-3.5 4.7-6.8 9.6-9.9 14.6l-3 5.3c-2.8 5-5.3 10.2-7.6 15.6c-3.7 8.7-.9 18.6 6.2 25l22.2 19.8C32.6 161.9 32 168.9 32 176s.6 14.1 1.7 20.9L11.5 216.7c-7.1 6.3-9.9 16.2-6.2 25c2.3 5.3 4.8 10.5 7.6 15.6l3 5.2c3 5.1 6.3 9.9 9.9 14.6c5.7 7.6 15.7 10.1 24.7 7.1l28.2-9.3c10.7 8.8 23 16 36.2 20.9l6.1 29.1c1.9 9.3 9.1 16.7 18.5 17.8c6.7 .8 13.5 1.2 20.4 1.2s13.7-.4 20.4-1.2c9.4-1.1 16.6-8.6 18.5-17.8l6.1-29.1c13.3-5 25.5-12.1 36.2-20.9l28.2 9.3c9 3 19 .5 24.7-7.1c3.5-4.7 6.8-9.5 9.8-14.6l3.1-5.4c2.8-5 5.3-10.2 7.6-15.5c3.7-8.7 .9-18.6-6.2-25l-22.2-19.8c1.1-6.8 1.7-13.8 1.7-20.9s-.6-14.1-1.7-20.9l22.2-19.8zM112 176a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zM504.7 500.5c6.3 7.1 16.2 9.9 25 6.2c5.3-2.3 10.5-4.8 15.5-7.6l5.4-3.1c5-3 9.9-6.3 14.6-9.8c7.6-5.7 10.1-15.7 7.1-24.7l-9.3-28.2c8.8-10.7 16-23 20.9-36.2l29.1-6.1c9.3-1.9 16.7-9.1 17.8-18.5c.8-6.7 1.2-13.5 1.2-20.4s-.4-13.7-1.2-20.4c-1.1-9.4-8.6-16.6-17.8-18.5L583.9 307c-5-13.3-12.1-25.5-20.9-36.2l9.3-28.2c3-9 .5-19-7.1-24.7c-4.7-3.5-9.6-6.8-14.6-9.9l-5.3-3c-5-2.8-10.2-5.3-15.6-7.6c-8.7-3.7-18.6-.9-25 6.2l-19.8 22.2c-6.8-1.1-13.8-1.7-20.9-1.7s-14.1 .6-20.9 1.7l-19.8-22.2c-6.3-7.1-16.2-9.9-25-6.2c-5.3 2.3-10.5 4.8-15.6 7.6l-5.2 3c-5.1 3-9.9 6.3-14.6 9.9c-7.6 5.7-10.1 15.7-7.1 24.7l9.3 28.2c-8.8 10.7-16 23-20.9 36.2L315.1 313c-9.3 1.9-16.7 9.1-17.8 18.5c-.8 6.7-1.2 13.5-1.2 20.4s.4 13.7 1.2 20.4c1.1 9.4 8.6 16.6 17.8 18.5l29.1 6.1c5 13.3 12.1 25.5 20.9 36.2l-9.3 28.2c-3 9-.5 19 7.1 24.7c4.7 3.5 9.5 6.8 14.6 9.8l5.4 3.1c5 2.8 10.2 5.3 15.5 7.6c8.7 3.7 18.6 .9 25-6.2l19.8-22.2c6.8 1.1 13.8 1.7 20.9 1.7s14.1-.6 20.9-1.7l19.8 22.2zM464 304a48 48 0 1 1 0 96 48 48 0 1 1 0-96z"/></svg> -->
+            <!-- First Gear -->
+            <!-- <svg class="gear-icon gear-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path d="M495.9 166.6c3.2 8.7 .5 18.4-6.4 24.6l-43.3 39.4c1.1 8.3 1.7 16.8 1.7 25.4s-.6 17.1-1.7 25.4l43.3 39.4c6.9 6.2 9.6 15.9 6.4 24.6c-4.4 11.9-9.7 23.3-15.8 34.3l-4.7 8.1c-6.6 11-14 21.4-22.1 31.2c-5.9 7.2-15.7 9.6-24.5 6.8l-55.7-17.7c-13.4 10.3-28.2 18.9-44 25.4l-12.5 57.1c-2 9.1-9 16.3-18.2 17.8c-13.8 2.3-28 3.5-42.5 3.5s-28.7-1.2-42.5-3.5c-9.2-1.5-16.2-8.7-18.2-17.8l-12.5-57.1c-15.8-6.5-30.6-15.1-44-25.4L83.1 425.9c-8.8 2.8-18.6 .3-24.5-6.8c-8.1-9.8-15.5-20.2-22.1-31.2l-4.7-8.1c-6.1-11-11.4-22.4-15.8-34.3c-3.2-8.7-.5-18.4 6.4-24.6l43.3-39.4C64.6 273.1 64 264.6 64 256s.6-17.1 1.7-25.4L22.4 191.2c-6.9-6.2-9.6-15.9-6.4-24.6c4.4-11.9 9.7-23.3 15.8-34.3l4.7-8.1c6.6-11 14-21.4 22.1-31.2c5.9-7.2 15.7-9.6 24.5-6.8l55.7 17.7c13.4-10.3 28.2-18.9 44-25.4l12.5-57.1c2-9.1 9-16.3 18.2-17.8C227.3 1.2 241.5 0 256 0s28.7 1.2 42.5 3.5c9.2 1.5 16.2 8.7 18.2 17.8l12.5 57.1c15.8 6.5 30.6 15.1 44 25.4l55.7-17.7c8.8-2.8 18.6-.3 24.5 6.8c8.1 9.8 15.5 20.2 22.1 31.2l4.7 8.1c6.1 11 11.4 22.4 15.8 34.3zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160z"/>
+            </svg> -->
+            <!-- Second Gear -->
+
+
+            --------------------------------------------------------------------------
+
+.elementor-19570 .elementor-element.elementor-element-031a1c9{--display:flex;--min-height:0px;--flex-direction:row;--container-widget-width:initial;--container-widget-height:100%;--container-widget-flex-grow:1;--container-widget-align-self:stretch;--flex-wrap-mobile:wrap;--gap:0px 0px;--row-gap:0px;--column-gap:0px;}.elementor-19570 .elementor-element.elementor-element-815544f{--display:flex;--flex-direction:column;--container-widget-width:100%;--container-widget-height:initial;--container-widget-flex-grow:0;--container-widget-align-self:initial;--flex-wrap-mobile:wrap;--justify-content:center;}.elementor-19570 .elementor-element.elementor-element-2903c06 .favethemes-site-logo{text-align:left;}.elementor-19570 .elementor-element.elementor-element-ed7436d{--display:flex;--flex-direction:column;--container-widget-width:100%;--container-widget-height:initial;--container-widget-flex-grow:0;--container-widget-align-self:initial;--flex-wrap-mobile:wrap;--justify-content:center;}.elementor-19570 .elementor-element.elementor-element-4d1237a .houzez-nav-menu-main-desktop-wrap .houzez-nav-menu-main .nav-link{color:#FFFFFF;fill:#FFFFFF;}.elementor-19570 .elementor-element.elementor-element-82e52a3{--display:flex;--flex-direction:row;--container-widget-width:initial;--container-widget-height:100%;--container-widget-flex-grow:1;--container-widget-align-self:stretch;--flex-wrap-mobile:wrap;}.elementor-19570 .elementor-element.elementor-element-9de581b{--display:flex;--flex-direction:row;--container-widget-width:initial;--container-widget-height:100%;--container-widget-flex-grow:1;--container-widget-align-self:stretch;--flex-wrap-mobile:wrap;--justify-content:center;}.elementor-19570 .elementor-element.elementor-element-41fee3b.elementor-element{--align-self:center;}.elementor-19570 .elementor-element.elementor-element-41fee3b .login-register{text-align:center;}.elementor-19570 .elementor-element.elementor-element-41fee3b .navbar-logged-in-wrap{float:right;}.elementor-19570 .elementor-element.elementor-element-41fee3b .login-link, .register-link{font-size:50px;}.elementor-19570 .elementor-element.elementor-element-41fee3b .btn-icon-login-register i{color:#FFFFFF;}.elementor-19570 .elementor-element.elementor-element-41fee3b .login-link a{color:#00aeef;}.elementor-19570 .elementor-element.elementor-element-41fee3b .register-link a{color:#00aeef;}.elementor-19570 .elementor-element.elementor-element-41fee3b .logged-in-nav a{background-color:#ffffff;border-color:#e6e6e6;color:#2e3e49;}.elementor-19570 .elementor-element.elementor-element-41fee3b .btn-icon-login-register:hover i{color:#00aeef;}.elementor-19570 .elementor-element.elementor-element-41fee3b .login-link a:hover{color:#00aeef;}.elementor-19570 .elementor-element.elementor-element-41fee3b .register-link a:hover{color:#00aeef;}.elementor-19570 .elementor-element.elementor-element-41fee3b .logged-in-nav a:hover{background-color:#00aeff1a;border-color:#dce0e0;color:#00aeff;}.elementor-19570 .elementor-element.elementor-element-41fee3b .logged-in-nav{top:45px;}.elementor-19570 .elementor-element.elementor-element-2f01efb{--display:flex;--flex-direction:row;--container-widget-width:initial;--container-widget-height:100%;--container-widget-flex-grow:1;--container-widget-align-self:stretch;--flex-wrap-mobile:wrap;}.elementor-19570 .elementor-element.elementor-element-53776a9 .btn-create-listing{padding:0px 15px 0px 15px;color:#ffffff;background-color:#00aeff;border-color:#00aeff;}.elementor-19570 .elementor-element.elementor-element-53776a9 .btn-create-listing:hover, .btn-create-listing:active{color:#fffffffc;background-color:#00aeffa6;border-color:#00aeffa6;}@media(max-width:1024px){.elementor-19570 .elementor-element.elementor-element-41fee3b .logged-in-nav{top:45px;}}@media(max-width:767px){.elementor-19570 .elementor-element.elementor-element-815544f{--width:30%;}.elementor-19570 .elementor-element.elementor-element-ed7436d{--width:20%;}.elementor-19570 .elementor-element.elementor-element-82e52a3{--width:35%;}.elementor-19570 .elementor-element.elementor-element-9de581b{--width:30%;}.elementor-19570 .elementor-element.elementor-element-41fee3b .logged-in-nav{top:45px;}.elementor-19570 .elementor-element.elementor-element-2f01efb{--width:23%;}}@media(min-width:768px){.elementor-19570 .elementor-element.elementor-element-815544f{--width:20%;}.elementor-19570 .elementor-element.elementor-element-ed7436d{--width:60%;}.elementor-19570 .elementor-element.elementor-element-82e52a3{--width:20%;}}@media(max-width:1024px) and (min-width:768px){.elementor-19570 .elementor-element.elementor-element-ed7436d{--width:50%;}}
+
+
+appszonebangladesh@gmail.com
+Siy@mcse@30
+
+ 01717862830
+
+            --------------------------------------------------------------------------
+            --------------------------------------------------------------------------
+
+/*
+Theme Name: Houzez
+Theme URI: http://houzez.co/
+Author: Favethemes 
+Author URI: http://www.favethemes.com/
+Description: Houzez is a premium WordPress theme for real estate agents where modern aesthetics are combined with tasteful simplicity, and where the ease of use is achieved without compromise in your ability to customise the design. Whether you are a real estate agent looking to build a website for your company or a web developer seeking a perfect WordPress theme for your next project, you are certain to appreciate the numerous features and benefits that our theme provides.
+Version: 3.4.7
+Tags: right-sidebar, left-sidebar, custom-colors, custom-menu, featured-images, post-formats, theme-options, translation-ready
+License: GNU General Public License version 3.0
+License URI: http://www.gnu.org/licenses/gpl-3.0.html
+Text Domain: houzez  
+Requires at least: WordPress 6.0
+*/
+
+/* Start your styles after this comment */
+@charset "UTF-8";.gdpr-text,.title-counter{font-weight:300}.property-by-id-module .grid-view .item-listing-wrap{margin-bottom:0}.property-carousel-module .grid-view{margin-right:0;margin-left:0}.houzez-all-slider-wrap{opacity:0;visibility:hidden;transition:opacity 1s;-webkit-transition:opacity 1s}.houzez-all-slider-wrap.slick-initialized{visibility:visible;opacity:1}#price-plac-js,.back-to-top-wrap .btn-back-to-top,.deals-main-wrap .dashboard-statistic-block h3,.houzez-hidden,.houzez-hide-menu-mobile,.houzez-hide-menu-tablet,.houzez-menu-toggle.houzez-nav-menu-active .icon-navigation-menu,.houzez-nav-menu-main-mobile-wrap.nav-mobile,.houzez-search-form-js .elementor-field-group .elementor-select-wrapper:before,.ihf-container .dropdown-toggle:after,.item-wrap-v6 .area_postfix,.leads-main-wrap .dashboard-statistic-block h3,.link-account-wrap,.new-account-wrap,[data-elementor-device-mode=mobile] .houzez-hide-menu-mobile,[data-elementor-device-mode=mobile] .houzez-hide-menu-tablet,[data-elementor-device-mode=tablet] .houzez-hide-menu-tablet{display:none}.elementor-field-group .captcha_wrapper{margin-bottom:0!important}.login-required-block{margin-top:30px;margin-bottom:200px}.grecaptcha-badge{z-index:9999;bottom:90px!important}.houzez-dashboard .grecaptcha-badge,body.houzez-halfmap-page .grecaptcha-badge{display:none!important}@media (max-width:992px){.grecaptcha-badge{display:none!important}}.search-hidden,.sticky-nav-area,.sticky-search-area{position:relative;width:100%;z-index:1000;top:0;opacity:0;visibility:hidden;transform:translate(0,-200px)}.houzez-in-view{opacity:1;position:fixed!important;visibility:visible;transition:.4s;transform:translate(0,0) scale(1);animation:.4s fadein}.advanced-search-widget .features-list-wrap .btn-features-list,.advanced-search-widget .features-list-wrap .control--checkbox,.advanced-search-widget .range-text{color:#222!important}.houzez-ele-price-slider,[data-elementor-device-mode=desktop] .houzez-show-menu-desktop,[data-elementor-device-mode=desktop] .hz-show-menu-desktop,[data-elementor-device-mode=mobile] .houzez-show-menu-desktop,[data-elementor-device-mode=mobile] .houzez-show-menu-mobile,[data-elementor-device-mode=mobile] .houzez-show-menu-tablet,[data-elementor-device-mode=tablet] .houzez-show-menu-desktop,[data-elementor-device-mode=tablet] .houzez-show-menu-tablet,[data-elementor-device-mode=tablet] .hz-show-menu-tablet{display:block}.houzez-ele-price-slider .price-range-wrap,.hz-terms-of-use{padding-bottom:0}.single-property .listing-tabs .nav-tabs .nav-link{min-width:100px}.single-property .vertical-listing-tabs.listing-tabs .nav-tabs .nav-link{min-width:50px}.property-detail-v3 ul.lSPager.lSGallery li{max-height:70px}.property-detail-v4 ul.lSPager.lSGallery li{max-height:105px}form.update-frontend-property .houzez-custom-field .control{width:48%;float:left;margin-right:5px}form.add-frontend-property .houzez-custom-field .control:nth-child(3n+1),form.update-frontend-property .houzez-custom-field .control:nth-child(odd){clear:left}.login-form-page-wrap{max-width:480px}.login-form-page-text,.login-form-page-wrap{margin:40px auto 60px;min-height:450px}.btn-loader:after{border:2px solid #333;border-color:#333 transparent}.property-disclaimer{color:#555;padding:20px 0 40px;text-align:center;font-size:13px;line-height:21px}.hz-list-icon,.taxonomy-item-list ul li .hz-list-icon{text-align:var(--hz-icon-list-icon-align)}span.agent-phone a{color:#222}a.btn-whatsapp{color:#25d366}.error-container .error{display:block;line-height:1.5;padding:0 0 5px;color:#ea3d3d;transition:.2s linear}.blog-post-item-v2 .blog-post-content-wrap.with-no-author{bottom:0;padding-bottom:10px}.hz-item-gallery-js .listing-gallery-wrap{transition:.1s ease-in-out;width:100%;height:100%;overflow:hidden}.title-counter{float:right}.frontend-submission-page,.mt-30{margin-top:30px}#ihf-main-container .dropdown-menu.pull-right{right:auto}.property-grids-module-v4 .item-tools{z-index:3}.property-view .vertical-listing-tabs{max-width:50px}.single-property .elementor-widget-wrap .mobile-top-wrap .mobile-property-title .labels-wrap{top:inherit}div#houzez-agent-sidebar-map{width:100%;min-height:260px}.features_group_name{font-weight:600;margin:5px 0 10px}.search-no-results-found-wrap{min-height:300px}.media-drag-drop.is-invalid,span.control__indicator.is-invalid{border-color:#dc3545}.houzez-button-align-justify .houzez-ele-button,.property-detail-v6 .property-top-wrap .img-wrap-1 .img-fluid{width:100%}.grid-view .agent-details .d-flex{flex-direction:inherit}.agent-company-logo img.img-fluid{max-height:50px}.table-property-thumb{width:90px}.stats-data-01 i{color:#ebebeb}.stats-data-04 i{color:#c2d500}@media (max-width:390px){.agents-list-view .agent-list-wrap .d-flex{display:block!important}.agent-list-wrap .agent-list-image{max-width:100%;margin-bottom:20px;margin-right:0}}.property-title-mobile{font-size:20px}.print-content .print-section li{justify-content:space-between!important}.map-info-window .item-wrap img{max-height:90px}.taxonomy-item-list ul li{align-items:var(--icon-vertical-align,center)}.property-author-wrap{margin-bottom:20px;border-bottom:1px solid #ccc;padding-bottom:20px}.dashboard-edit-listing .property-author-wrap{margin-top:20px}.houzez-search-button{border:1px solid transparent}.add-new-agent-form-wrap{max-width:400px}.taxonomy-item-list-count-separated ul li a{flex-grow:1}.hz-price-placeholder{margin-top:5px}div#mapping-container{margin-top:40px;border-top:1px solid #ccc;padding-top:30px}.hz-list-icon{display:flex;position:relative;top:var(--icon-vertical-offset,initial)}.hz-list-icon svg{width:var(--hz-icon-list-icon-size,1em);height:var(--hz-icon-list-icon-size,1em)}.hz-list-icon i,.hz-list-icon i.houzez-icon{width:1.25em;font-size:var(--hz-icon-list-icon-size)}.taxonomy-item-list ul li .hz-list-icon svg{margin:var(--hz-icon-list-icon-margin,0 calc(var(--hz-icon-list-icon-size,1em) * .25) 0 0)}.houzez-elementor-menu li{border-width:0}.houzez-nav-menu-main-desktop-wrap .houzez-nav-menu-main .dropdown-item{padding:10px}.houzez-nav-menu-layout-dropdown .mobile-navbar-nav,.tour-day-form-slide-arrow.slick-arrow{background-color:#fff}.houzez-nav-menu-main-mobile-wrap.nav-mobile .main-nav .navbar-nav .nav-item .nav-mobile-trigger{padding:10px 20px;right:0}.control.control--checkbox.hz-no-gdpr-checkbox{padding-left:0}.hz-date-item{margin-right:1px;margin-left:2px}.profile-image a{position:absolute;margin:2px;right:13px}.profile-image a i{color:#fff;font-size:16px;padding:4px;background-color:#333;font-weight:700}.tab-content-hele-v1 .houzez-360-virtual-tour iframe{height:inherit}.hz-social-messages .alert{display:inherit}.listing-slider-variable-width .slick-slide{padding-left:2px;padding-right:2px}.elementor-widget .mobile-property-title .labels-wrap{top:0}.listing-v5 .list-view .item-wrap-v5 .item-amenities{justify-content:start}.reset-password-form .modal-title{font-weight:700}.houzez-button-align-center{text-align:center}.houzez-button-align-right{text-align:right}.houzez-button-align-left{text-align:left}.houzez-ele-button-content-wrapper{display:flex;justify-content:center;flex-direction:row;gap:5px}.houzez-author-box{display:flex;align-items:center}.elementor-widget-houzez-author-box:not(
+.houzez-author-box--layout-image-above
+).houzez-author-box--image-valign-top .houzez-author-box__avatar,.elementor-widget-houzez-author-box:not(.houzez-author-box--layout-image-above) .houzez-author-box__avatar{align-self:flex-start}.houzez-author-box__text{flex-grow:1;font-size:17px}.hzele-form-wrap .property-form-wrap{padding:30px;background-color:#fff}.hs-meta-widget-icon svg{width:15px}.houzez-author-box__avatar img{width:100px;border-radius:500px;object-fit:cover}.houzez-author-box__name{font-size:24px;margin-bottom:5px}.houzez-author-box__avatar{flex-shrink:0;margin-inline-end:25px}.houzez-author-box__bio,.houzez-author-box__bio p{margin-bottom:.8em}.houzez-author-box--layout-image-left .houzez-author-box{flex-direction:row}.houzez-author-box--layout-image-right .houzez-author-box{flex-direction:row-reverse}.houzez-author-box--layout-image-above .houzez-author-box,.property-slider-item .btn-item{display:block}.elementor-widget-houzez-author-box:not(
+.houzez-author-box--layout-image-above
+).houzez-author-box--image-valign-middle .houzez-author-box__avatar{align-self:center}.elementor-icon-list-items .elementor-icon-list-item .elementor-icon-list-text a,.elementor-icon-list-items .elementor-icon-list-item .elementor-icon-list-text span{display:inline}.property-section-wrap.with-separator .block-wrap ul:first-of-type{border-left:1px solid #dce0e0}.property-section-wrap.with-separator .block-wrap ul{border-right:1px solid #dce0e0;text-align:center}.dash-logo img{max-width:100%}.main-ele-nav{z-index:4}.features-list.houzez-custom-field{padding-top:0;display:-ms-grid;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:auto;grid-gap:3px}@media (max-width:767.98px){.property-detail-v6 .property-banner{padding-bottom:0}.property-detail-v2 #pills-gallery{height:0;padding-top:75%}.single-property .back-to-top-wrap{bottom:75px}.property-detail-v7 .houzez-360-virtual-tour iframe,.property-detail-v7 .houzez-top-area-video iframe,.property-detail-v7 .houzez-top-area-video>div{position:absolute;top:0;height:100%;width:100%}}.admin-bar .pswp,.admin-bar .pswp__caption,.admin-bar .pswp__top-bar{z-index:99999}.pswp__img{cursor:pointer!important}
+
+
+
+
+
+/* 
+    * Path: /htdocs/mouthe-vn/moithue/wp-content/themes/houzez/style.css
+    * AppsZone Customized
+    * Tue Feb 11 2025 16:20:52 GMT+0600 (Bangladesh Standard Time)
+*/
+
+.live-edit-btn {
+    position: fixed;
+    top: 28%;
+    right: 20px;
+    z-index: 99;
+}
+
+.live-button {
+    transition-duration: 300ms;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    width: 100px;
+    height: 90px;
+    background: #ffa500;
+    padding: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0px 0px 12px 4px rgba(0, 0, 0, 0.12);
+    scale: 0.975;
+}
+
+.gear-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 60px;
+    position: relative;
+    padding-top: 6px;
+}
+
+.live-text {
+    background: #4caf50;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    padding: 4px 12px;
+    font-size: 14px;
+    margin-top: 7px;
+    width: 100%;
+    display: block;
+    text-align: center;
+}
+
+.gear-icon {
+    width: 32px;
+    height: 32px;
+    fill: white;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+.gear-center {
+    animation: spin-left 3s linear infinite;
+}
+
+.gear-left {
+    animation: spin-left 3s linear infinite;
+    position: absolute;
+    left: 50%;
+    margin-left: -28px;
+}
+
+.gear-right {
+    animation: spin-right 3s linear infinite;
+    position: absolute;
+    left: 50%;
+    margin-left: -4px;
+}
+
+@keyframes spin-left {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spin-right {
+    from {
+        transform: rotate(360deg);
+    }
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+/* Add smooth transition for hover effect */
+.live-button:hover {
+    scale: 1;
+}
+.live-button:hover .gear-left,
+.live-button:hover .gear-center,
+.live-button:hover .gear-right {
+    animation-duration: 1.5s;
+}
+
+/* End AppsZone Customized */
+
+
+
+
+            --------------------------------------------------------------------------
+------------------------------------------- *Start property-item.php ------------------------------
+
+
+<?php
+global $post, $houzez_local;
+$post_id    = get_the_ID();
+$submit_link = houzez_dashboard_add_listing();
+$listings_page = houzez_dashboard_listings();
+$edit_link  	= add_query_arg( 'edit_property', get_the_ID(), $submit_link );
+$delete_link  	= add_query_arg( 'property_id', get_the_ID(), $listings_page );
+$paid_submission_type  = houzez_option('enable_paid_submission');
+$property_status = get_post_status ( $post->ID );
+$payment_status = get_post_meta( get_the_ID(), 'fave_payment_status', true );
+
+$payment_page = houzez_get_template_link('template/template-payment.php');
+$insights_page = houzez_get_template_link_2('template/user_dashboard_insight.php');
+$payment_page_link = add_query_arg( 'prop-id', $post_id, $payment_page );
+$payment_page_link_featured = add_query_arg( 'upgrade_id', $post_id, $payment_page );
+$insights_page_link = add_query_arg( 'listing_id', $post_id, $insights_page );
+$fave_featured = get_post_meta( $post->ID, 'fave_featured', true );
+
+$is_user_can_manage = houzez_is_admin() || houzez_is_editor();
+
+if( $paid_submission_type == 'membership' ) {
+    $put_on_hold_class = 'put-on-hold-package';
+} else {
+    $put_on_hold_class = 'put-on-hold';
+}
+
+if( $property_status == 'publish' ) {
+    $status_badge = '<span class="badge badge-success">'.esc_html__('Approved', 'houzez').'</span>';
+} elseif( $property_status == 'on_hold' ) {
+    $status_badge = '<span class="badge badge-info">'.esc_html__('On Hold', 'houzez').'</span>';
+} elseif( $property_status == 'houzez_sold' ) {
+    $status_badge = '<span class="badge badge-danger">'.esc_html__('Sold', 'houzez').'</span>';
+} elseif( $property_status == 'pending' ) {
+    $status_badge = '<span class="badge badge-warning">'.esc_html__('Pending', 'houzez').'</span>';
+} elseif( $property_status == 'expired' ) {
+    $status_badge = '<span class="badge badge-danger">'.esc_html__('Expired', 'houzez').'</span>';
+
+    
+} elseif( $property_status == 'disapproved' ) {
+    $status_badge = '<span class="badge badge-danger">'.esc_html__('Disapproved', 'houzez').'</span>';
+} elseif( $property_status == 'draft' ) {
+    $status_badge = '<span class="badge badge-dark">'.esc_html__('Draft', 'houzez').'</span>';
+} else {
+    $status_badge = '';
+}
+ 
+
+
+
+$payment_status_label = '';
+if( $property_status != 'expired' && $property_status != 'disapproved' ) {
+    if ($paid_submission_type != 'no' && $paid_submission_type != 'membership' && $paid_submission_type != 'free_paid_listing' ) {
+        if ($payment_status == 'paid') {
+            $payment_status_label = '<span class="label property-payment-status">' . esc_html__('PAID', 'houzez') . '</span>';
+        } elseif ($payment_status == 'not_paid') {
+            $payment_status_label = '<span class="label property-payment-status">' . esc_html__('NOT PAID', 'houzez') . '</span>';
+        } else {
+            $payment_status_label = '';
+        }
+    } else {
+        $payment_status_label = '';
+    }
+}
+?>
+<tr>
+	
+	<td class="property-table-thumbnail" data-label="<?php echo esc_html__('Thumbnail', 'houzez'); ?>">
+		<div class="table-property-thumb">
+			
+			<?php 
+            if( houzez_user_role_by_post_id($post_id) != 'administrator' ) {
+                echo $payment_status_label; 
+            }?>
+
+			<a href="<?php echo esc_url(get_permalink()); ?>">
+			<?php
+			if( has_post_thumbnail() && get_the_post_thumbnail(get_the_ID()) != '') {
+                the_post_thumbnail(array('100', '75'));
+            } else {
+                echo '<img src="http://via.placeholder.com/100x75">';
+            }
+			?>
+			</a>	
+		</div>
+	</td>
+	
+	<td class="property-table-address" data-label="<?php echo esc_html__('Title', 'houzez'); ?>">
+		<a href="<?php echo esc_url(get_permalink()); ?>"><strong><?php the_title(); ?></strong></a><br>
+		<?php echo houzez_get_listing_data('property_map_address'); ?><br>
+		<?php if( houzez_user_role_by_post_id($post_id) != 'administrator' && get_post_status ( $post_id ) == 'publish' ) { ?>
+                <?php if( $paid_submission_type == 'membership' ) { ?>
+                <span class="expiration_date">
+                    <?php echo esc_html__('Expiration:', 'houzez'); ?> <?php houzez_listing_expire(); ?>
+                    <?php houzez_featured_listing_expire(); ?><br>
+                </span>
+                <?php } else if($paid_submission_type != 'no' && houzez_option('per_listing_expire_unlimited') ) { ?>
+                <span class="expiration_date">
+                    <?php echo esc_html__('Expiration:', 'houzez'); ?> <?php houzez_listing_expire(); ?>
+                    <?php houzez_featured_listing_expire(); ?><br>
+                </span>
+                <?php } ?>
+        <?php } ?>
+	</td>
+
+	<td>
+		<?php echo $status_badge; ?>
+	</td>
+
+	<td class="property-table-type" data-label="<?php echo esc_html__('Type', 'houzez'); ?>">
+		<?php echo houzez_taxonomy_simple('property_type'); ?>&nbsp	
+	</td>
+
+	<td class="property-table-status" data-label="<?php echo esc_html__('Status', 'houzez'); ?>">
+		<?php echo houzez_taxonomy_simple('property_status'); ?>&nbsp
+	</td>
+
+	<td class="property-table-price" data-label="<?php echo esc_html__('Price', 'houzez'); ?>">
+		<?php houzez_property_price_admin(); ?>&nbsp
+	</td>
+
+	<td class="property-table-featured" data-label="<?php echo esc_html__('Featured', 'houzez'); ?>">
+		<?php 
+		if(houzez_get_listing_data('featured')) {
+			echo esc_html__('Yes', 'houzez'); 
+		} else {
+			echo esc_html__('No', 'houzez'); 
+		}
+		?>
+	</td>
+    <td>
+        <?php
+        echo date_i18n( get_option('date_format'), strtotime( $post->post_date ) );
+        echo '<br>';
+        echo date_i18n( get_option('time_format'), strtotime( $post->post_date ) );
+        echo '<br>';
+        echo ( empty( $post->post_author ) ? __( 'by a guest', 'houzez' ) : sprintf( __( 'by %s', 'houzez' ), '<a href="' . esc_url( add_query_arg( 'user', $post->post_author, $listings_page ) ) . '">' . get_the_author() . '</a>' ) );
+        ?>
+    </td>
+
+	<td class="property-table-actions" data-label="<?php echo esc_html__('Actions', 'houzez'); ?>">
+		<div class="dropdown property-action-menu">
+			<button class="btn btn-primary-outlined dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				<?php echo esc_html__('Actions', 'houzez'); ?>
+			</button>
+			<div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
+
+                <?php 
+                if( class_exists('Fave_Insights') && !empty($insights_page) ) { ?>
+                <a class="dropdown-item" href="<?php echo esc_url($insights_page_link); ?>"><?php esc_html_e('View Stats', 'houzez'); ?></a>
+                <?php } ?>
+
+                <?php if( $property_status != 'expired' ) { ?>
+				<a class="dropdown-item" href="<?php echo esc_url($edit_link); ?>"><?php esc_html_e('Edit', 'houzez'); ?></a>
+                <?php } ?>
+
+				<a href="" class="delete-property dropdown-item" data-id="<?php echo intval($post->ID); ?>" data-nonce="<?php echo wp_create_nonce('delete_my_property_nonce') ?>"><?php esc_html_e('Delete', 'houzez'); ?></a>
+
+				<a class="clone-property dropdown-item" data-nonce="<?php echo wp_create_nonce('clone_property_nonce') ?>" data-property="<?php echo $post->ID; ?>" href="#"><?php esc_html_e('Duplicate', 'houzez'); ?></a>
+
+				<?php 
+				if(houzez_is_published( $post->ID )) { ?>
+                <a href="#" class="<?php echo esc_attr($put_on_hold_class); ?> dropdown-item" data-property="<?php echo intval($post->ID); ?>" data-nonce="<?php echo wp_create_nonce('puthold_property_nonce') ?>"> 
+                	<?php esc_html_e('Put On Hold', 'houzez');?>
+                </a>
+                <?php 
+            	} elseif (houzez_on_hold( $post->ID )) { ?>
+                    <a href="#" class="<?php echo esc_attr($put_on_hold_class); ?> dropdown-item" data-property="<?php echo intval($post->ID); ?>" data-nonce="<?php echo wp_create_nonce('puthold_property_nonce') ?>"> 
+                    	<?php esc_html_e('Go Live', 'houzez');?>
+                    </a>
+                <?php }
+
+                if(houzez_is_published( $post->ID ) && houzez_option('enable_mark_as_sold', 0) ) { ?>
+                <a href="#" class="mark_as_sold_js dropdown-item" data-property="<?php echo intval($post->ID); ?>" data-nonce="<?php echo wp_create_nonce('sold_property_nonce') ?>"> 
+                    <?php esc_html_e('Mark as Sold', 'houzez');?>
+                </a>
+                <?php } ?>
+
+                <?php
+
+                if( $is_user_can_manage ) {
+
+                    if ( in_array( $post->post_status, array( 'pending', 'disapproved' ) ) ) { 
+                        echo '<a href="#" data-propid="'.intval( $post->ID ).'" data-type="approve" class="dropdown-item houzez-prop-action-js"><strong>' . esc_html__('Approve', 'houzez') . '</strong></a>';
+                    }
+
+                    if ( in_array( $post->post_status, array( 'pending', 'publish' ) ) ) { 
+                        echo '<a href="#" data-propid="'.intval( $post->ID ).'" data-type="disapprove" class="dropdown-item houzez-prop-action-js"><strong>' . esc_html__('Disapproved', 'houzez') . '</strong></a>';
+                    }
+
+                    if ( in_array( $post->post_status, array( 'publish' ) ) && ! $fave_featured ) { 
+                        echo '<a href="#" data-propid="'.intval( $post->ID ).'" data-type="set_featured" class="dropdown-item houzez-prop-action-js"><strong>' . esc_html__('Mark as Featured', 'houzez') . '</strong></a>';
+                    }
+
+                    if ( in_array( $post->post_status, array( 'publish' ) ) && $fave_featured ) { 
+                        echo '<a href="#" data-propid="'.intval( $post->ID ).'" data-type="remove_featured" class="dropdown-item houzez-prop-action-js"><strong>' . esc_html__('Remove from Featured', 'houzez') . '</strong></a>';
+                    }
+
+                    if ( in_array( $post->post_status, array( 'publish' ) ) ) { 
+                        echo '<a href="#" data-propid="'.intval( $post->ID ).'" data-type="expire" class="dropdown-item houzez-prop-action-js">' . esc_html__('Mark as Expired', 'houzez') . '</a>';
+                    }
+
+                    if ( in_array( $post->post_status, array( 'expired', 'houzez_sold', 'draft' ) ) ) { 
+                        echo '<a href="#" data-propid="'.intval( $post->ID ).'" data-type="publish" class="dropdown-item houzez-prop-action-js">' . esc_html__('Publish', 'houzez') . '</a>';
+                    }
+
+                } else {
+
+                    if( $paid_submission_type == 'per_listing' && $property_status != 'expired' ) {
+                        if ($payment_status != 'paid') {
+
+                            if( houzez_is_woocommerce() ) {
+                                echo '<a href="#" class="houzez-woocommerce-pay btn pay-btn" data-listid="'.intval($post_id).'">' . esc_html__('Pay Now', 'houzez') . '</a>';
+                            } else {
+                                echo '<a href="' . esc_url($payment_page_link) . '" class="btn pay-btn">' . esc_html__('Pay Now', 'houzez') . '</a>';
+                            }
+                        } else {
+                            if( houzez_get_listing_data('featured') != 1 && $property_status == 'publish' ) {
+
+                                if( houzez_is_woocommerce() ) {
+                                    echo '<a href="' . esc_url($payment_page_link_featured) . '" class="houzez-woocommerce-pay btn pay-btn" data-featured="1" data-listid="'.intval($post_id).'">' . esc_html__('Upgrade to Featured', 'houzez') . '</a>';
+                                } else {
+                                    echo '<a href="' . esc_url($payment_page_link_featured) . '" class="btn pay-btn">' . esc_html__('Upgrade to Featured', 'houzez') . '</a>';
+                                }
+                                
+                            }
+                        }
+                    }
+
+                    if( $property_status == 'expired' && ( $paid_submission_type == 'per_listing') ) {
+                        
+                        if( houzez_is_woocommerce() ) {
+                            echo '<a href="#" data-listid="'.intval($post_id).'" class="houzez-woocommerce-pay btn pay-btn">'.esc_html__( 'Re-List', 'houzez' ).'</a>';
+                        } else {
+
+                            $payment_page_link_expired = add_query_arg( array('prop-id' => $post_id, 'mode' => 'relist'), $payment_page );
+                            echo '<a href="' . esc_url($payment_page_link_expired) . '" class="btn pay-btn">'.esc_html__( 'Re-List', 'houzez' ).'</a>';
+                        }
+                        
+                    }
+
+                    if( $property_status == 'expired' && ( $paid_submission_type == 'free_paid_listing' || $paid_submission_type == 'no' ) ) {
+                        
+                        echo '<a href="#" data-property="'.$post->ID.'" class="relist-free btn pay-btn">'.esc_html__( 'Re-List', 'houzez' ).'</a>';
+                        
+                    }
+
+                    if( houzez_check_post_status( $post->ID ) ) {
+
+                        // Membership
+                        if ( $paid_submission_type == 'membership' && houzez_get_listing_data('featured') != 1 && $property_status == 'publish' ) {
+                            
+                            echo '<a href="#" data-proptype="membership" data-propid="'.intval( $post->ID ).'" class="make-prop-featured btn pay-btn">' . esc_html__('Set as Featured', 'houzez') . '</a>';
+                            
+                        }
+                        if ( $paid_submission_type == 'membership' && houzez_get_listing_data('featured') == 1 ) {
+                            
+                            echo '<a href="#" data-proptype="membership" data-propid="'.intval( $post->ID ).'" class="remove-prop-featured btn pay-btn">' . esc_html__('Remove From Featured', 'houzez') . '</a>';
+                            
+                        }
+                        if( $property_status == 'expired' && $paid_submission_type == 'membership' ) {
+                            
+                            echo '<a href="#" data-propid="'.intval( $post->ID ).'" class="resend-for-approval btn pay-btn">' . esc_html__('Reactivate Listing', 'houzez') . '</a>';
+                            
+                        }
+
+                        //Paid Featured
+                        if( $paid_submission_type == 'free_paid_listing' && $property_status == 'publish' ) {
+                            
+                            if( houzez_get_listing_data('featured') != 1 ) {
+
+                                if( houzez_is_woocommerce() ) {
+                                    echo '<a href="#" class="houzez-woocommerce-pay btn pay-btn" data-featured="1" data-listid="'.intval($post_id).'">' . esc_html__('Upgrade to Featured', 'houzez') . '</a>';
+                                } else {
+                                    echo '<a href="' . esc_url($payment_page_link_featured) . '" class="btn pay-btn">' . esc_html__('Upgrade to Featured', 'houzez') . '</a>';
+                                }
+                            }
+                            
+                        }
+
+                    }
+                }
+                ?>
+			</div>
+		</div>
+	</td>
+</tr>
+
+
+------------------------------------------- *End property-item.php ------------------------------

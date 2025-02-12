@@ -1,0 +1,194 @@
+
+---Downloaded files---
+The import files for: Houzez40 were successfully downloaded!
+Initial max execution time = 480
+Files info:
+Site URL = https://moithue.com.vn
+Data file = /home/u989415759/domains/moithue.com.vn/public_html/wp-content/uploads/2025/02/demo-content-import-file_2025-02-04__16-20-50.xml
+Widget file = /home/u989415759/domains/moithue.com.vn/public_html/wp-content/uploads/2025/02/demo-widgets-import-file_2025-02-04__16-20-50.json
+Customizer file = not defined!
+Redux files:
+houzez_options -> /home/u989415759/domains/moithue.com.vn/public_html/wp-content/uploads/2025/02/demo-redux-import-file_0-2025-02-04__16-20-50.json 
+
+
+---ocdi/before_content_import---
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+------
+New AJAX call!
+
+
+---Importing widgets---
+Default Sidebar : 
+
+Block - No Title - Imported
+Archives - No Title - Imported
+Categories - No Title - Imported
+Meta - No Title - Imported
+
+Property Listings : 
+
+HOUZEZ: Featured Properties - Featured Listings - Imported
+HOUZEZ: Property Taxonomies - Property Type - Imported
+HOUZEZ: Property Taxonomies - Cities - Imported
+
+Search Sidebar : 
+
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+Mailchimp Sign-Up Form - Newsletter - Imported
+HOUZEZ: Property Taxonomies - Popular Cities - Imported
+HOUZEZ: Featured Properties - Featured - Imported
+
+Page Sidebar : 
+
+HOUZEZ: Featured Properties - Featured - Imported
+HOUZEZ: Property Taxonomies - Discover - Imported
+HOUZEZ: Latest Posts - Latest Posts - Imported
+
+Agency Sidebar : 
+
+HOUZEZ: Agency Search - Find Agency - Imported
+HOUZEZ: Featured Properties - Featured - Imported
+
+Agent Sidebar : 
+
+HOUZEZ: Agent Search - Find Agent - Imported
+HOUZEZ: Recent View Properties - Recent Viewed  - Imported
+
+Footer Area 1 : 
+
+HOUZEZ: Property Taxonomies - Discover - Imported
+
+Footer Area 2 : 
+
+HOUZEZ: Contact Us - Contact Us - Imported
+
+Footer Area 3 : 
+
+Mailchimp Sign-Up Form - Newsletter - Imported
+
+
+
+---Importing Redux settings---
+Redux settings import for: houzez_options finished successfully!
+
+---Importing widgets---
+Default Sidebar : 
+
+Block - No Title - Widget already exists
+Archives - No Title - Widget already exists
+Categories - No Title - Widget already exists
+Meta - No Title - Widget already exists
+
+Property Listings : 
+
+HOUZEZ: Featured Properties - Featured Listings - Widget already exists
+HOUZEZ: Property Taxonomies - Property Type - Widget already exists
+HOUZEZ: Property Taxonomies - Cities - Widget already exists
+
+Search Sidebar : 
+
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+HOUZEZ: Property Taxonomies - Popular Cities - Widget already exists
+HOUZEZ: Featured Properties - Featured - Widget already exists
+
+Page Sidebar : 
+
+HOUZEZ: Featured Properties - Featured - Widget already exists
+HOUZEZ: Property Taxonomies - Discover - Widget already exists
+HOUZEZ: Latest Posts - Latest Posts - Widget already exists
+
+Agency Sidebar : 
+
+HOUZEZ: Agency Search - Find Agency - Widget already exists
+HOUZEZ: Featured Properties - Featured - Widget already exists
+
+Agent Sidebar : 
+
+HOUZEZ: Agent Search - Find Agent - Widget already exists
+HOUZEZ: Recent View Properties - Recent Viewed  - Widget already exists
+
+Footer Area 1 : 
+
+HOUZEZ: Property Taxonomies - Discover - Widget already exists
+
+Footer Area 2 : 
+
+HOUZEZ: Contact Us - Contact Us - Widget already exists
+
+Footer Area 3 : 
+
+Mailchimp Sign-Up Form - Newsletter - Widget already exists
+
+
+
+---Importing Redux settings---
+Redux settings import for: houzez_options finished successfully!
+
+---ocdi/after_import---
+
