@@ -4,7 +4,7 @@ date_default_timezone_set('Asia/Dhaka');
 final class Logger
 {
     // Path to the log file
-    private static $logFile = __DIR__ . '/logs/app.log';
+    private static $logFile = __DIR__ . '/app.log';
 
     /**
      * Write a log message with a specific level.

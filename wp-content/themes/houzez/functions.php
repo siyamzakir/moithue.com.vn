@@ -656,57 +656,56 @@ if( ! function_exists( 'houzez_is_mobile_filter' ) ) {
 	//add_filter( 'wp_is_mobile', 'houzez_is_mobile_filter' );
 }
 
-if( ! function_exists('houzez_update_existing_users_with_manager_role_once') ) {
-	function houzez_update_existing_users_with_manager_role_once() {
-	    // Check if the update has already been done
-	    if (get_option('houzez_manager_role_updated')) {
-	        return; // Exit if already run
-	    }
+if ( ! function_exists( 'houzez_update_existing_users_with_manager_role_once' ) ) {
+    function houzez_update_existing_users_with_manager_role_once() {
+        // Check if the update has already been done
+        if ( get_option( 'houzez_manager_role_updated' ) ) {
+            return; // Exit if already run
+        }
 
-	    // Fetch all users with the houzez_manager role
-	    $args = [
-	        'role' => 'houzez_manager'
-	    ];
-	    $users = get_users($args);
+        // Fetch all users with the houzez_manager role
+        $args = [
+            'role' => 'houzez_manager'
+        ];
+        $users = get_users( $args );
 
-	    foreach ($users as $user) {
-	        // Ensure each user has the houzez_manager role, which now has updated capabilities
-	        $user->add_role('houzez_manager');
-	    }
+        foreach ( $users as $user ) {
+            // Ensure each user has the houzez_manager role, which now has updated capabilities
+            $user->add_role( 'houzez_manager' );
+        }
 
-	    // Set an option to indicate the update has been run
-	    update_option('houzez_manager_role_updated', true);
-	}
+        // Set an option to indicate the update has been run
+        update_option( 'houzez_manager_role_updated', true );
+    }
 
-	// Run the function to update users
-	houzez_update_existing_users_with_manager_role_once();
-	
-	
-// ===================================================================================================================================================
-// ===================================================================================================================================================
-// ===================================================================================================================================================
+    // Run the function to update users
+    houzez_update_existing_users_with_manager_role_once();
+}
+
+// ======================================================================================================================
+// ======================================================================================================================
+// ======================================================================================================================
 // AppsZone Customized
 // 09 Feb 2025
-	
-//ACF Plugin have to be installed (Mendatory- Installed)
+
+// ACF Plugin have to be installed (Mandatory - Installed)
 // Restrict listing creation for Agent
 function restrict_agents_listing_creation() {
-    if (current_user_can('houzez_agent')) {
-        remove_menu_page('edit.php?post_type=property'); // Hide "Add Property" from menu
+    if ( current_user_can( 'houzez_agent' ) ) {
+        remove_menu_page( 'edit.php?post_type=property' ); // Hide "Add Property" from menu
     }
 }
-add_action('admin_menu', 'restrict_agents_listing_creation');
+add_action( 'admin_menu', 'restrict_agents_listing_creation' );
 
-
-//Cutted the code by siyam
+// Cutted the code by siyam
 // Display Assigned Listings in Dashboards
 // This ensures that both the original listing owner and the assigned manager can see the listings in their dashboards.
-function include_assigned_listings_in_dashboard($query) {
-    if (is_admin() || !$query->is_main_query()) {
+function include_assigned_listings_in_dashboard( $query ) {
+    if ( is_admin() || ! $query->is_main_query() ) {
         return;
     }
 
-    if (is_post_type_archive('property') && is_user_logged_in()) {
+    if ( is_post_type_archive( 'property' ) && is_user_logged_in() ) {
         $user_id = get_current_user_id();
         $meta_query = array(
             'relation' => 'OR',
@@ -722,50 +721,41 @@ function include_assigned_listings_in_dashboard($query) {
             ),
         );
 
-        $query->set('meta_query', $meta_query);
+        $query->set( 'meta_query', $meta_query );
     }
 }
-add_action('pre_get_posts', 'include_assigned_listings_in_dashboard');
+add_action( 'pre_get_posts', 'include_assigned_listings_in_dashboard' );
 
-	
-
-	
-	
-	
-	
-	
-	
 // Display Assigned Agent/Agency on the Admin Listing Edit Page
 // What This Code Does?
-//1. Creates a new meta box in the listing edit page under the "Property" post type.
-//2. Displays the assigned agent or agency in the sidebar.
-//3. If no agent is assigned, it shows "No manager assigned."
+// 1. Creates a new meta box in the listing edit page under the "Property" post type.
+// 2. Displays the assigned agent or agency in the sidebar.
+// 3. If no agent is assigned, it shows "No manager assigned."
 // Add Assigned Manager Meta Box in Admin Listing Edit Page
 function houzez_assigned_manager_meta_box() {
     add_meta_box(
         'houzez_assigned_manager',
-        __('Assigned Manager', 'houzez'),
+        __( 'Assigned Manager', 'houzez' ),
         'houzez_assigned_manager_callback',
         'property',
         'side',
         'default'
     );
 }
-add_action('add_meta_boxes', 'houzez_assigned_manager_meta_box');
+add_action( 'add_meta_boxes', 'houzez_assigned_manager_meta_box' );
 
 // Callback Function to Display Assigned Agent/Agency
-function houzez_assigned_manager_callback($post) {
-    $assigned_user_id = get_post_meta($post->ID, 'assigned_manager', true);
-    $user_info = $assigned_user_id ? get_userdata($assigned_user_id) : null;
-    
+function houzez_assigned_manager_callback( $post ) {
+    $assigned_user_id = get_post_meta( $post->ID, 'assigned_manager', true );
+    $user_info = $assigned_user_id ? get_userdata( $assigned_user_id ) : null;
+
     echo '<p><strong>Assigned Manager:</strong></p>';
-    if ($user_info) {
-        echo '<p>' . esc_html($user_info->display_name) . '</p>';
+    if ( $user_info ) {
+        echo '<p>' . esc_html( $user_info->display_name ) . '</p>';
     } else {
         echo '<p>No manager assigned.</p>';
     }
 }
-
 // Step 3: Display Assigned Agent/Agency on the Frontend Listing Page
 // Now, modify the single-property.php template to show the assigned agent/agency on the frontend.
 //Open your theme files and locate: houzez/single-property.php
@@ -787,52 +777,27 @@ function houzez_assigned_manager_callback($post) {
 //Retrieves the assigned agent or agency.
 //Displays their name and email under the listing details.
 
+/**
+ * Developed: AppsZone
+ * Date: 12 Feb 2025
+ * SYED AMIR ALI
+ * 
+ */
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-}
+// add_action('admin_menu', 'houzez_add_assign_editors_menu');
 
-add_action('admin_menu', 'houzez_add_custom_dashboard_menu');
+// function houzez_add_assign_editors_menu() {
+//     add_menu_page(
+//         esc_html__('Assign Editors', 'houzez'), // Page title
+//         esc_html__('Assign Editors', 'houzez'), // Menu title
+//         'manage_options', // Capability
+//         'assign-editors', // Menu slug
+//         'houzez_assign_editors_page', // Function to display the page
+//         'dashicons-admin-users', // Icon
+//         7 // Position
+//     );
+// }
 
-function houzez_add_custom_dashboard_menu() {
-    add_menu_page(
-        esc_html__('My Custom Dashboard', 'houzez'), // Page title
-        esc_html__('Custom Dashboard', 'houzez'), // Menu title
-        'manage_options', // Capability
-        'my-custom-dashboard', // Menu slug
-        'houzez_custom_dashboard_page', // Function to display the page
-        'dashicons-dashboard', // Icon
-        6 // Position
-    );
-}
-
-function houzez_custom_dashboard_page() {
-    include get_template_directory() . '/template-parts/dashboard/my-custom-dashboard-page.php';
-}
-
-add_action('admin_menu', 'houzez_add_assign_editors_menu');
-
-function houzez_add_assign_editors_menu() {
-    add_menu_page(
-        esc_html__('Assign Editors', 'houzez'), // Page title
-        esc_html__('Assign Editors', 'houzez'), // Menu title
-        'manage_options', // Capability
-        'assign-editors', // Menu slug
-        'houzez_assign_editors_page', // Function to display the page
-        'dashicons-admin-users', // Icon
-        7 // Position
-    );
-}
-
-function houzez_assign_editors_page() {
-    include get_template_directory() . '/template-parts/dashboard/assign-editors.php';
-}
+// function houzez_assign_editors_page() {
+//     include get_template_directory() . '/template-parts/dashboard/assign-editors.php';
+// }

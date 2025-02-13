@@ -18,8 +18,8 @@ if (!is_user_logged_in() || !houzez_check_role()) {
 
 global $houzez_local, $prop_featured, $current_user, $post;
 
-wp_get_current_user();
-$userID         = get_current_user_id();
+$user_id = get_current_user_id();
+$current_user = wp_get_current_user();
 $user_login     = $current_user->user_login;
 $paid_submission_type = esc_html ( houzez_option('enable_paid_submission','') );
 $packages_page_link = houzez_get_template_link('template/template-packages.php');
@@ -28,6 +28,82 @@ $dashboard_add_listing = houzez_get_template_link_2('template/user_dashboard_sub
 $dashboard_listings = houzez_get_template_link_2('template/user_dashboard_properties.php');
 $all = add_query_arg( 'prop_status', 'all', $dashboard_listings );
 $mine_link = add_query_arg( 'prop_status', 'mine', $dashboard_listings );
+
+/**
+ * START: Assign Editors to a Property
+ * Edited By AppsZone
+ * @since 1.0.0
+ * 
+ */
+
+$users = get_users();
+$messages = ['type' => '', 'message' => ''];
+
+if($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : null;
+    $author_id = isset($_POST['author_id']) ? intval($_POST['author_id']) : null;
+     
+    $editor_ids = isset($_POST['editor_ids']) 
+        ? (is_array($_POST['editor_ids']) ? json_encode(array_map('intval', $_POST['editor_ids'])) : $_POST['editor_ids'])
+        : '[]';
+
+    $new_data = [];
+    $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : get_current_user_id();
+
+    try {
+        if ($user_id && $post_id && $editor_ids) {
+            $check = DB::findByColumns(DB::LISTING_EDITORS, ['post_id' => $post_id, 'author_id' => $author_id]);
+
+            $new_data['post_id'] = $post_id;
+            $new_data['author_id'] = $author_id;
+            $new_data['user_id'] = $user_id;
+            $new_data['editor_ids'] = $editor_ids;
+
+            if ($check) {
+                $new_data['update'] = DB::updateByColumns(DB::LISTING_EDITORS, [
+                    'post_id' => $post_id,
+                    'user_id' => $user_id
+                ], [
+                    'editor_ids' => $editor_ids
+                ]);
+
+                if($new_data['update']) {
+                    $messages['type'] = 'success';
+                    $messages['message'] = 'Successfully updated the assigned editors for the property.';
+                } else {
+                    $messages['type'] = 'danger';
+                    $messages['message'] = 'Failed to update the assigned editors for the property.';
+                }
+            } else {
+                $new_data['create'] = DB::create(DB::LISTING_EDITORS, [
+                    'post_id' => $post_id,
+                    'author_id' => $author_id,
+                    'user_id' => $user_id,
+                    'editor_ids' => $editor_ids
+                ]);
+
+                if($new_data['create']) {
+                    $messages['type'] = 'success';
+                    $messages['message'] = 'New editors assigned successfully to the property.';
+                } else {
+                    $messages['type'] = 'danger';
+                    $messages['message'] = 'Failed to assign editors to the property.';
+                }
+            }
+        } else {
+            $messages['type'] = 'warning';
+            $messages['message'] = 'Invalid request or missing parameters.';
+        }
+    } catch (Exception $e) {
+        $messages['type'] = 'danger';
+        $messages['message'] = 'Failed to assign editors to the property.';
+        Logger::error("Error: " . $e->getMessage());
+    }
+}
+
+/* 
+ * END: Assign Editors to a Property
+ */
 
 get_header();
 
@@ -61,42 +137,47 @@ $args = [
     'paged'          => $paged,
     'posts_per_page' => $no_of_prop,
     'post_status'    => [$qry_status],
-    'suppress_filters' => false
+    'suppress_filters' => false, 
+    // 'post__in' => [361]
 ];
 
-$args = houzez_prop_sort ( $args );
+/* Start Edited By AppsZone */
+$args = houzez_prop_sort($args);
+$is_houzez_manager = houzez_is_admin() || houzez_is_editor();
 
-if( houzez_is_admin() || houzez_is_editor() ) {
-    if( isset( $_GET['user'] ) && $_GET['user'] != '' ) {
+/* End Edited By AppsZone */
+
+if($is_houzez_manager) {
+    if(isset( $_GET['user'] ) && !empty($_GET['user'])) {
         $args['author'] = intval($_GET['user']);
 
-    } else if( isset( $_GET['prop_status'] ) && $_GET['prop_status'] == 'mine' ) {
-        $args['author'] = $userID;
+    } else if(isset( $_GET['prop_status'] ) && $_GET['prop_status'] == 'mine' ) {
+        $args['author'] = $user_id;
     }
-} else if( houzez_is_agency() ) {
-    $agents = houzez_get_agency_agents($userID);
+} else if(houzez_is_agency()) {
+    $agents = houzez_get_agency_agents($user_id);
     
-    if( isset( $_GET['user'] ) && $_GET['user'] != '' ) {
+    if(isset( $_GET['user'] ) && !empty($_GET['user'])) {
         $requested_user = intval($_GET['user']);
         // Only set author if requested user is current user or one of their agents
-        if($requested_user === $userID || in_array($requested_user, $agents)) {
+        if($requested_user === $user_id || in_array($requested_user, $agents)) {
             $args['author'] = $requested_user;
         } else {
             // If requested user is not authorized, show no properties
             $args['author'] = -1; // This will return no results
         }
-    } else if( isset( $_GET['prop_status'] ) && $_GET['prop_status'] == 'mine' ) {
-        $args['author'] = $userID;
-    } else if( $agents ) {
-        if (!in_array($userID, $agents)) {
-            $agents[] = $userID;
+    } else if(isset( $_GET['prop_status'] ) && $_GET['prop_status'] == 'mine') {
+        $args['author'] = $user_id;
+    } else if($agents && !empty($agents)) {
+        if (!in_array($user_id, $agents)) {
+            $agents[] = $user_id;
         }
         $args['author__in'] = $agents;
     } else {
-        $args['author'] = $userID;
+        $args['author'] = $user_id;
     }
 } else {
-    $args['author'] = $userID;
+    $args['author'] = $user_id;
 }
 
 
@@ -125,10 +206,38 @@ if (!empty($_GET['property_id'])) {
         $args['meta_query'] = $meta_query;
     }
 }
+
+
+/* Start Edited By AppsZone */
+$ids = DB::getPostIdsByEditorId($user_id);
+if(!$is_houzez_manager && !empty($ids)) {
+    $default_author = DB::MAIN_ADMINISTRATOR_ID;
+    
+    if($default_author && is_numeric($default_author)) {
+        $args['author'] = $default_author;
+    } else {
+        unset($args['author']);
+    }
+
+    $args['post__in'] = $ids;
+}
+
+// Logger::info("user_dashboard_properties.php", compact('args'));
+/* End Edited By AppsZone */
 ?>
 
 <header class="header-main-wrap dashboard-header-main-wrap">
     <div class="dashboard-header-wrap">
+
+        <!-- Handle Messages with cancel button -->
+        <?php if($messages['type'] && $messages['message']) { ?>
+            <div class="alert alert-<?php echo $messages['type']; ?>">
+                <?php echo $messages['message']; ?>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="margin-top: -10px;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        <?php } ?>
         <div class="d-flex align-items-center">
             <div class="dashboard-header-left flex-grow-1">
                 <h1><?php echo houzez_option('dsh_props', 'Properties'); ?></h1>         
@@ -179,17 +288,15 @@ if (!empty($_GET['property_id'])) {
                 </thead>
                 <tbody>
                     <?php 
-                    while ($prop_qry->have_posts()): $prop_qry->the_post();
-
-                        get_template_part('template-parts/dashboard/property/property-item');
-
-                    endwhile; 
+                        while ($prop_qry->have_posts()): $prop_qry->the_post();
+                            get_template_part('template-parts/dashboard/property/property-item');
+                        endwhile; 
                     ?>
 
                 </tbody>
                 </table><!-- dashboard-table -->
 
-                <?php houzez_pagination( $prop_qry->max_num_pages ); ?>
+                <?php houzez_pagination( $prop_qry->max_num_pages ); ?> 
 
             <?php    
             else: 
@@ -216,5 +323,109 @@ if (!empty($_GET['property_id'])) {
 <section class="dashboard-side-wrap">
     <?php get_template_part('template-parts/dashboard/side-wrap'); ?>
 </section>
+
+
+<!--
+    * Customized By AppsZone    
+    * Script to assign editors to a property
+    * Date: 12/02/2025
+    * Time: 09:08 PM
+    * 
+-->
+    
+<!-- Popup form for assign editors to a property -->
+<div class="modal fade" id="assign-editors-modal" tabindex="-1" role="dialog" aria-labelledby="assign-editors-modal-label" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assign-editors-modal-label">Assign Managers</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="assign-editors-form" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>" method="POST"> 
+                    <div class="form-group">
+                        <label for="assign-editors-select">Select Editors</label>
+                        <select class="form-control" id="assign-editors-select" multiple 
+                            data-live-search="true" placeholder="please type to search" data-live-search-placeholder="search..."
+                            name="editor_ids[]"
+                        >
+                            <option value="" hidden disabled>Select Editors</option>
+                            <?php foreach ($users as $user) { 
+                                if(!in_array("administrator", $user->roles)) { ?>
+                                    <option value="<?php echo $user->ID; ?>"><?php echo $user->display_name; ?></option>
+                            <?php } } ?>
+                        </select>
+                    </div>  
+                    <input type="hidden" id="post_meta" name="post_meta" post_meta>
+                    <input type="hidden" id="user_id" name="user_id">
+                    <input type="hidden" id="post_id" name="post_id">
+                    <input type="hidden" id="author_id" name="author_id"> 
+                    
+                    <!-- Set the button to right align -->
+                    <div class="text-right">
+                        <button type="submit" class="btn btn-success">Update Managers</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    const users = <?php echo json_encode($users); ?>;
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('#assign-editors-form');
+        const assignEditors = document.querySelectorAll('[assign-editors]');
+        assignEditors.forEach(editor => {
+            editor.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                const data = JSON.parse(editor.getAttribute('assign-editors'));
+                const editorIds = JSON.parse(data?.editor_ids);
+
+                form.querySelector('#user_id').value = data?.user_id;
+                form.querySelector('#post_id').value = data?.post_id;
+                form.querySelector('#author_id').value = data?.post_author;
+
+                jQuery('#assign-editors-modal').modal('show');
+                jQuery('#assign-editors-select').selectpicker({
+                    multiple: true,
+                    search: true
+                }).selectpicker('val', editorIds);
+
+                console.log({editorIds,data});
+            });
+        });
+
+        // use selectpicker for the select element and enable multiple selection with search
+        jQuery('#assign-editors-select').selectpicker({
+            multiple: true,
+            search: true,
+        });
+    });
+</script>
+
+<style>
+    /* Add this CSS to style the selected options and the cross icon */
+    .selectpicker .dropdown-menu .selected {
+        background-color: #f0f0f0; /* Light gray background */
+        position: relative; /* Positioning for the icon */
+    }
+
+    .selectpicker .dropdown-menu .selected .remove-icon {
+        position: absolute;
+        right: 5px; /* Adjust as needed */
+        top: 50%;
+        transform: translateY(-50%);
+        border: 1px solid #ccc; /* Border for the icon */
+        border-radius: 50%; /* Rounded border */
+        padding: 2px; /* Padding for the icon */
+        cursor: pointer; /* Pointer cursor on hover */
+        background-color: white; /* Background for the icon */
+    }
+</style>
 
 <?php get_footer(); ?>

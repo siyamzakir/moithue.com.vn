@@ -200,7 +200,11 @@ function listing_edit_url($listing_id) {
     return "{$home}/create-listing?edit_property={$listing_id}";
 }
 
-if(($current_user_id && $post_author_id && ($post_author_id === $current_user_id)) || $is_admin): ?>
+if(
+    DB::hasAssignedEditor($current_user_id, $post_id) ||
+    ($current_user_id && $post_author_id && ($post_author_id === $current_user_id)) || 
+    $is_admin
+):?>
     <div class="live-edit-btn">
         <a href="<?= listing_edit_url($post_id) ?>" target="_blank" class="live-button">
             <div class="gear-container">
@@ -212,33 +216,6 @@ if(($current_user_id && $post_author_id && ($post_author_id === $current_user_id
         </a>
     </div>
 <?php endif; ?>
-
-
-<script>
-    console.log(<?= json_encode(compact(
-        'role',
-        'post', 
-        'post_id', 
-        'single_top_area', 
-        'single_content_area', 
-        'map_street_view', 
-        'loggedin_to_view', 
-        'property_live_status', 
-        'hide_fields', 
-        'enable_disclaimer', 
-        'global_disclaimer', 
-        'property_disclaimer', 
-        'is_sticky', 
-        'sticky_sidebar', 
-        'is_full_width', 
-        'top_area', 
-        'property_layout', 
-        'content_classes', 
-        'layout_class', 
-        'post_author_id', 
-        'current_user_id'
-    )) ?>);
-</script>
 
 <!-- End AppsZone Customized -->
 

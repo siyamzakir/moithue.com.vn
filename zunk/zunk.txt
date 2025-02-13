@@ -726,3 +726,265 @@ if( $property_status != 'expired' && $property_status != 'disapproved' ) {
 
 
 ------------------------------------------- *End property-item.php ------------------------------
+------------------------------------------- *Start edit-property-form.php ------------------------------
+------------------------------------------- * NEW EDITION * ------------------------------
+
+<?php
+/**
+ * Edit Property Form
+ * Created by PhpStorm.
+ * User: waqasriaz
+ * Date: 07/10/15
+ * Time: 3:45 PM
+ * 
+ * Second Time Edit by AppsZone
+ * Date: 12/02/2025
+ * User: syedamirali - github.com/syedamirali
+ * Time: 4:00 PM
+ */
+
+global $current_user, $hide_add_prop_fields, $required_fields, $is_multi_steps, $prop_meta_data;
+
+$userID = get_current_user_id();
+$enable_paid_submission = houzez_option('enable_paid_submission');
+$select_packages_link = houzez_get_template_link('template/template-packages.php');
+$remaining_listings = houzez_get_remaining_listings($userID);
+$show_submit_btn = houzez_option('submit_form_type');
+
+$allowed_html = array();
+$edit_prop_id = 0;
+$property_data = null;
+
+if (is_page_template('template/user_dashboard_submit.php')) {
+    $allowed_html = array(
+        'i' => array('class' => array()),
+        'strong' => array(),
+        'a' => array(
+            'href' => array(),
+            'title' => array(),
+            'target' => array()
+        )
+    );
+
+    // Check Author
+    $current_user = wp_get_current_user();
+    $edit_prop_id = intval(trim($_GET['edit_property']));
+    $property_data = get_post($edit_prop_id);
+
+    if (!empty($property_data) && ($property_data->post_type == 'property')) {
+        $prop_meta_data = get_post_custom($property_data->ID);
+
+        if ($property_data->post_author == $current_user->ID || houzez_can_manage() || houzez_is_editor()) {
+            if (!houzez_is_admin() && $property_data->post_status == 'draft' && $enable_paid_submission == 'membership' && $remaining_listings != -1 && $remaining_listings < 1 && is_user_logged_in()) {
+                if (!houzez_user_has_membership($userID)) {
+                    echo '<div class="user_package_status">
+                            <h4>' . esc_html__("You don't have any package! You need to buy your package.", 'houzez') . '</h4>
+                            <a class="btn btn-primary" href="' . esc_url($select_packages_link) . '">' . esc_html__('Get Package', 'houzez') . '</a>
+                          </div>';
+                } else {
+                    echo '<div class="user_package_status">
+                            <h4>' . esc_html__("Your current package doesn't let you publish more properties! You need to upgrade your membership.", 'houzez') . '</h4>
+                            <a class="btn btn-primary" href="' . esc_url($select_packages_link) . '">' . esc_html__('Upgrade Package', 'houzez') . '</a>
+                          </div>';
+                }
+            } else { ?>
+                <form id="submit_property_form" name="new_post" method="post" action="" enctype="multipart/form-data" class="update-frontend-property">
+                    <input type="hidden" name="draft_prop_id" value="<?php echo esc_attr($edit_prop_id); ?>">
+
+                    <?php if (isset($_GET['updated']) && $_GET['updated'] == 1) { ?>
+                        <div class="alert alert-success" role="alert">
+                            <?php esc_html_e('Updated successfully.', 'houzez'); ?>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    <?php } ?>
+
+                    <?php if (isset($_GET['success']) && $_GET['success'] == 1) { ?>
+                        <div class="alert alert-success" role="alert">
+                            <?php esc_html_e('Submitted successfully.', 'houzez'); ?>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    <?php } ?>
+
+                    <div class="validate-errors alert alert-danger houzez-hidden" role="alert">
+                        <?php echo wp_kses('<strong>Error!</strong> Please fill out the following required fields.', $allowed_html); ?>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="validate-errors-gal alert alert-danger houzez-hidden" role="alert">
+                        <?php echo wp_kses('<strong>Error!</strong> Upload at least one image.', $allowed_html); ?>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <?php get_template_part('template-parts/dashboard/submit/partials/menu-edit-property-mobile'); ?>
+
+                    <?php
+                    $layout = houzez_option('property_form_sections');
+                    $layout = isset($layout['enabled']) ? $layout['enabled'] : [];
+
+                    if ($layout) {
+                        foreach ($layout as $key => $value) {
+                            switch ($key) {
+                                case 'description-price':
+                                    get_template_part('template-parts/dashboard/submit/description-and-price');
+                                    break;
+                                case 'media':
+                                    get_template_part('template-parts/dashboard/submit/media');
+                                    break;
+                                case 'details':
+                                    get_template_part('template-parts/dashboard/submit/details');
+                                    break;
+                                case 'energy_class':
+                                    get_template_part('template-parts/dashboard/submit/energy-class');
+                                    break;
+                                case 'features':
+                                    get_template_part('template-parts/dashboard/submit/features');
+                                    break;
+                                case 'location':
+                                    get_template_part('template-parts/dashboard/submit/location');
+                                    break;
+                                case 'virtual_tour':
+                                    get_template_part('template-parts/dashboard/submit/360-virtual-tour');
+                                    break;
+                                case 'floorplans':
+                                    get_template_part('template-parts/dashboard/submit/floor', 'plans');
+                                    break;
+                                case 'multi-units':
+                                    get_template_part('template-parts/dashboard/submit/sub-properties');
+                                    break;
+                                case 'agent_info':
+                                    if (houzez_show_agent_box()) {
+                                        get_template_part('template-parts/dashboard/submit/contact-information');
+                                    }
+                                    break;
+                                case 'private_note':
+                                    get_template_part('template-parts/dashboard/submit/private-note');
+                                    break;
+                                case 'attachments':
+                                    get_template_part('template-parts/dashboard/submit/attachments');
+                                    break;
+                            }
+                        }
+                    }
+
+                    if (houzez_is_admin()) {
+                        get_template_part('template-parts/dashboard/submit/settings');
+                    }
+                    ?>
+
+                    <?php wp_nonce_field('submit_property', 'property_nonce'); ?>
+                    <input type="hidden" name="action" value="update_property"/>
+                    <input type="hidden" name="property_author" value="<?php echo intval($property_data->post_author); ?>"/>
+                    <input type="hidden" name="prop_id" value="<?php echo intval($property_data->ID); ?>"/>
+
+                    <?php if (!houzez_is_admin()) { ?>
+                        <input type="hidden" name="prop_featured" value="<?php echo isset($prop_meta_data['fave_featured']) ? sanitize_text_field($prop_meta_data['fave_featured'][0]) : ''; ?>">
+                    <?php } ?>
+
+                    <input type="hidden" name="prop_payment" value="<?php echo isset($prop_meta_data['fave_payment_status']) ? sanitize_text_field($prop_meta_data['fave_payment_status'][0]) : ''; ?>"/>
+
+                    <?php if (get_post_status($edit_prop_id) == 'draft') {
+                        echo '<input type="hidden" name="houzez_draft" value="draft">';
+                    } ?>
+
+                    <div class="d-flex add-new-listing-bottom-nav-wrap justify-content-end">
+                        <button type="submit" class="btn btn-success houzez-submit-js">
+                            <?php get_template_part('template-parts/loader'); ?>
+                            <?php echo houzez_option('fal_save_changes', esc_html__('Save Changes', 'houzez')); ?>
+                        </button>
+                    </div>
+                </form>
+            <?php
+            }
+        } else {
+            esc_html_e('You are not logged in or this property does not belong to the logged-in user.', 'houzez');
+        }
+    } else {
+        esc_html_e('This is not a valid request', 'houzez');
+    }
+}
+
+
+?>
+
+<script>
+    console.log(<?php echo json_encode(compact('allowed_html', 'edit_prop_id', 'property_data', 'current_user', 'enable_paid_submission', 'select_packages_link', 'remaining_listings', 'show_submit_btn', 'userID', 'prop_meta_data')); ?>);
+</script>
+
+
+
+
+------------------------------------------- *End edit-property-form.php ------------------------------
+
+
+$assigned_editor_ids = $assigned_editors ? json_decode($assigned_editors['editor_ids'], true) : [];
+
+echo "<script>console.log('Assigned Editors: ', " . json_encode(compact('assigned_editors', 'editor_ids', 'assigned_editor_ids')) . ")</script>";
+                            /* 
+                            * Get the assigned editors for the property
+                            * @param int $post_id
+                            * @return array
+                            */
+
+                            // $assigned_editors = DB::findByColumns(DB::LISTING_EDITORS, ['post_id' => $post->ID]);
+                            // $editor_ids = $assigned_editors ? $assigned_editors['editor_ids'] : '[]';
+                            // $decoded_editor_ids = json_decode($editor_ids, true);
+                            // /* Close the assigned editors for the property */
+                            // if(in_array($user_id, $decoded_editor_ids)) {
+                            // }
+// Logger::info("user_dashboard_properties.php", compact('args', 'qry_status', 'prop_status', 'sortby', 'no_of_prop', 'paged', 'current_user', 'user_id', 'is_houzez_manager'));
+
+     // Check for JSON errors
+    // if (json_last_error() !== JSON_ERROR_NONE) {
+    //     Logger::error('JSON Decode Error: ' . json_last_error_msg());
+    // }
+
+    // $_post = $_POST;
+    // $decode = json_decode($_POST['post_meta']);   
+    // $_post_meta = $_post['post_meta'];
+    // $is_array = is_array($editor_ids);
+    // $is_object = $editor_ids;
+    // $is_true = $user_id && $post_id && $editor_ids;
+    // $post_data = json_encode(compact('new_data', 'editor_ids', 'post_meta', '_post', 'decode', '_post_meta', 'err1', 'is_array', 'is_object', 'is_true'));
+    // echo "<script>console.log('POST DATA: ', $post_data)</script>";
+    // DB::update('wp_listing_editors', $post_id, ['editor_ids' => $editor_ids]);
+
+/* jQuery('#assign-editors-form').submit(function(e) {
+    e.preventDefault();
+    const selectedEditors = jQuery('#assign-editors-select').val();
+    console.log(selectedEditors);
+}); */
+
+
+<!-- <script>
+    console.log(< ?= json_encode(compact(
+        'role',
+        'post', 
+        'post_id', 
+        'single_top_area', 
+        'single_content_area', 
+        'map_street_view', 
+        'loggedin_to_view', 
+        'property_live_status', 
+        'hide_fields', 
+        'enable_disclaimer', 
+        'global_disclaimer', 
+        'property_disclaimer', 
+        'is_sticky', 
+        'sticky_sidebar', 
+        'is_full_width', 
+        'top_area', 
+        'property_layout', 
+        'content_classes', 
+        'layout_class', 
+        'post_author_id', 
+        'current_user_id'
+    )) ?>);
+</script> -->

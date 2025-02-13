@@ -1,0 +1,4 @@
+# Ignore all log files
+logs/*.log 
+/wp-content/debug.log
+/logs/app.log

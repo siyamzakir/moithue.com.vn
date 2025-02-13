@@ -1,2 +1,0 @@
-[11-Feb-2025 17:18:45 UTC] PHP Warning:  Undefined variable $prop_agent_email in /opt/lampp/htdocs/moithue/wp-content/themes/houzez/property-details/partials/schedule-tour-form.php on line 61
-[11-Feb-2025 17:18:45 UTC] PHP Deprecated:  strlen(): Passing null to parameter #1 ($string) of type string is deprecated in /opt/lampp/htdocs/moithue/wp-includes/formatting.php on line 3530
