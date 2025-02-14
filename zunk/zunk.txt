@@ -988,3 +988,18 @@ echo "<script>console.log('Assigned Editors: ', " . json_encode(compact('assigne
         'current_user_id'
     )) ?>);
 </script> -->
+// Logger::info("property-item.php", compact('editor_ids', 'post', 'post_as_editor', 'is_manager', 'is_user_can_manage', 'user_id', 'post_id', 'post_author'));
+// echo "<script>console.log('POST: ', " . json_encode([
+//     'post_id' => $post_id,
+//     'post_author' => $post_author,
+//     'editor_ids' => $editor_ids,
+//     'is_manager' => $is_manager,
+//     'is_user_can_manage' => $is_user_can_manage,
+//     'post_as_editor' => $post_as_editor,
+// ]) . ");</script>";
+
+
+
+        // Log the query and parameters for debugging
+        // Logger::info('Executing Query: ', ['query' => $query, 'params' => $merge]);
+        // Logger::info('Update DB: ', compact('timestamps', 'setQuery', 'whereQuery', 'query', 'columns', 'data', 'merge'));

@@ -1,5 +1,5 @@
 <?php
-global $post, $houzez_local, $user_id, $editor_ids;
+global $post, $houzez_local, $user_id;
 
 
 $post_id = intval($post->ID);
@@ -19,14 +19,21 @@ $payment_page_link_featured = add_query_arg('upgrade_id', $post_id, $payment_pag
 $insights_page_link = add_query_arg('listing_id', $post_id, $insights_page);
 $fave_featured = get_post_meta($post->ID, 'fave_featured', true);
 
+// Check if the current user is an admin or editor
 $is_user_can_manage = houzez_is_admin() || houzez_is_editor();
+
+// Get the put on hold class
 $put_on_hold_class = ($paid_submission_type == 'membership') ? 'put-on-hold-package' : 'put-on-hold';
 
-$is_assigned_editor = $is_user_can_manage || ($user_id == $post->post_author);
+// Check if the current user is the post author
+$is_manager = $is_user_can_manage || ($user_id == $post->post_author);
 
 // Get the assigned editors for the property
 $editor_ids = DB::getAssignedEditorByPostId($post_id);
-// Logger::info("property-item.php", compact('editor_ids', 'post'));
+$decoded_editor_ids = json_decode($editor_ids, true);
+
+// Check if the current user is an editor for the post
+$post_as_editor = !empty($decoded_editor_ids) && in_array($user_id, $decoded_editor_ids, true) && !$is_manager;
 
 // Status Badge
 $status_badge = '';
@@ -156,10 +163,10 @@ if ($property_status != 'expired' && $property_status != 'disapproved') {
                     * Thu Feb 13 2025 16:20:52 GMT+0600 (Bangladesh Standard Time)
                     * Powered by AppsZone
                 -->
-                <?php if ($is_assigned_editor) { ?>
-                    <a class="dropdown-item" 
+                <?php if ($is_manager) { ?>
+                    <a class="dropdown-item text-primary" 
                         assign-editors='<?= json_encode(compact('post_id', 'user_id', 'post_author', 'editor_ids'), JSON_UNESCAPED_UNICODE) ?>'
-                        href="#&<?= "post_id={$post_id}" ?>"
+                        href='#&<?= "post_id={$post_id}" ?>'
                     >
                         <?php esc_html_e('Assign Editors', 'houzez'); ?>
                     </a>
@@ -167,12 +174,17 @@ if ($property_status != 'expired' && $property_status != 'disapproved') {
                     <a href="#" class="delete-property dropdown-item" data-id="<?php echo $post_id ?>"
                         data-nonce="<?php echo wp_create_nonce('delete_my_property_nonce'); ?>"
                     >
-                        <?php esc_html_e('Delete', 'houzez'); ?>
+                        <strong><?php esc_html_e('Delete', 'houzez'); ?></strong>
+                    </a>               
+
+                    <a class="clone-property dropdown-item" 
+                        data-nonce="<?php echo wp_create_nonce('clone_property_nonce'); ?>" 
+                        data-property="<?php echo $post->ID; ?>" href="#"
+                    >
+                        <?php esc_html_e('Duplicate', 'houzez'); ?>
                     </a>
                 <?php } ?>
-                <!-- End Edited By AppsZone -->                
-
-                <a class="clone-property dropdown-item" data-nonce="<?php echo wp_create_nonce('clone_property_nonce'); ?>" data-property="<?php echo $post->ID; ?>" href="#"><?php esc_html_e('Duplicate', 'houzez'); ?></a>
+                <!-- End Edited By AppsZone --> 
 
                 <?php if (houzez_is_published($post->ID)) { ?>
                     <a href="#" class="<?php echo esc_attr($put_on_hold_class); ?> dropdown-item" data-property="<?php echo $post_id ?>" data-nonce="<?php echo wp_create_nonce('puthold_property_nonce'); ?>"> 
@@ -190,11 +202,20 @@ if ($property_status != 'expired' && $property_status != 'disapproved') {
                     </a>
                 <?php } ?>
 
-                <?php if ($is_user_can_manage) {
-                    if (in_array($post->post_status, array('pending', 'disapproved'))) { 
-                        echo "<a href='#' data-propid='{$post_id}' data-type='approve' class='dropdown-item houzez-prop-action-js'><strong>" . esc_html__('Approve', 'houzez') . '</strong></a>';
-                    }
+                <?php if (in_array($post->post_status, array('pending', 'disapproved')) && DB::LISTING_SELF_APPROVED) { ?> 
+                        <a href='#' data-propid='<?= $post_id ?>' data-type='approve' class='dropdown-item houzez-prop-action-js'>
+                            <strong><?= esc_html__('Approve', 'houzez') ?></strong>
+                        </a>
+                <?php } ?>
 
+                <!-- option for deny post/listing edit from post author or admin -->
+                 <?php if ($post_as_editor) { ?>
+                    <a alert-on-click href='?action=deny_edit&user_id=<?= $user_id ?>&post_id=<?= $post_id ?>' class='dropdown-item text-danger'>
+                        <strong><?= esc_html__('Deny Editing', 'houzez') ?></strong>
+                    </a>
+                 <?php } ?>
+
+                <?php if ($is_user_can_manage) {
                     if (in_array($post->post_status, array('pending', 'publish'))) { 
                         echo "<a href='#' data-propid='{$post_id}' data-type='disapprove' class='dropdown-item houzez-prop-action-js'><strong>" . esc_html__('Disapproved', 'houzez') . '</strong></a>';
                     }

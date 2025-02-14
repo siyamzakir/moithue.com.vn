@@ -12,14 +12,21 @@
  * Date: 12/02/2025
  * Time: 2:25 PM
  */
+
+// show errors in display
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Check if the user is logged in and has the necessary role
 if (!is_user_logged_in() || !houzez_check_role()) {
     wp_redirect(home_url());
 }
 
 global $houzez_local, $prop_featured, $current_user, $post;
 
-$user_id = get_current_user_id();
 $current_user = wp_get_current_user();
+$user_id = intval(get_current_user_id());
 $user_login     = $current_user->user_login;
 $paid_submission_type = esc_html ( houzez_option('enable_paid_submission','') );
 $packages_page_link = houzez_get_template_link('template/template-packages.php');
@@ -39,6 +46,33 @@ $mine_link = add_query_arg( 'prop_status', 'mine', $dashboard_listings );
 $users = get_users();
 $messages = ['type' => '', 'message' => ''];
 
+// Handle the deny edit action
+$action = isset($_GET['action']) ? $_GET['action'] : null;
+
+// Handle the deny edit action
+if($action == 'deny_edit') {
+    $get_user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+    $get_post_id = isset($_GET['post_id']) ? intval($_GET['post_id']) : null;
+
+    if($get_user_id && $get_post_id && $get_user_id === $user_id) {
+        $updated = DB::removeEditorFromPost($get_user_id, $get_post_id);
+        if($updated) {
+            $messages['type'] = 'success';
+            $messages['message'] = 'Editor removed successfully.';
+        } else {
+            $messages['type'] = 'danger';
+            $messages['message'] = 'Failed to remove editor.';
+        }
+    } else {
+        $messages['type'] = 'warning';
+        $messages['message'] = 'Invalid request or missing parameters or you are not allowed to remove this editor.';
+    }
+
+    // Logger::info("user_dashboard_properties.php", compact('get_user_id', 'get_post_id', 'user_id', 'updated', 'action'));
+    echo DB::echoDefaultUrl();
+}
+
+// Handle the assign editors action
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : null;
     $author_id = isset($_POST['author_id']) ? intval($_POST['author_id']) : null;
@@ -52,7 +86,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         if ($user_id && $post_id && $editor_ids) {
-            $check = DB::findByColumns(DB::LISTING_EDITORS, ['post_id' => $post_id, 'author_id' => $author_id]);
+            $check = DB::findByColumns(DB::LISTING_EDITORS, ['post_id' => $post_id]);
 
             $new_data['post_id'] = $post_id;
             $new_data['author_id'] = $author_id;
@@ -62,8 +96,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($check) {
                 $new_data['update'] = DB::updateByColumns(DB::LISTING_EDITORS, [
                     'post_id' => $post_id,
-                    'user_id' => $user_id
                 ], [
+                    'user_id' => $user_id,  
+                    'author_id' => $author_id,
                     'editor_ids' => $editor_ids
                 ]);
 
@@ -99,6 +134,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
         $messages['message'] = 'Failed to assign editors to the property.';
         Logger::error("Error: " . $e->getMessage());
     }
+
+    echo DB::echoDefaultUrl();
 }
 
 /* 
@@ -353,12 +390,12 @@ if(!$is_houzez_manager && !empty($ids)) {
                         >
                             <option value="" hidden disabled>Select Editors</option>
                             <?php foreach ($users as $user) { 
-                                if(!in_array("administrator", $user->roles)) { ?>
+                                if(!in_array("administrator", $user->roles) && $user->ID != $user_id) { ?>
                                     <option value="<?php echo $user->ID; ?>"><?php echo $user->display_name; ?></option>
                             <?php } } ?>
                         </select>
                     </div>  
-                    <input type="hidden" id="post_meta" name="post_meta" post_meta>
+                    <input type="hidden" id="post_meta" name="post_meta">
                     <input type="hidden" id="user_id" name="user_id">
                     <input type="hidden" id="post_id" name="post_id">
                     <input type="hidden" id="author_id" name="author_id"> 
@@ -404,6 +441,15 @@ if(!$is_houzez_manager && !empty($ids)) {
         jQuery('#assign-editors-select').selectpicker({
             multiple: true,
             search: true,
+        });
+
+        jQuery(document).on('click', '[alert-on-click]', function(e) {
+            e.preventDefault();
+            const url = jQuery(this).attr('href');
+
+            if(confirm('Are you sure you want to remove this editor?')) {
+                window.location.href = url;
+            }
         });
     });
 </script>

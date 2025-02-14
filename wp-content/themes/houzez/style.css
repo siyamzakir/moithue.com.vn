@@ -600,3 +600,17 @@ div#mapping-container {
 }
 
 /* End AppsZone Customized */
+.dropdown-item {
+    word-spacing: 5px;
+}
+
+/* hidden logo when screen size is greater than 992px and show when screen size is less than 992px use media max-width */
+.houzez-dashboard .logo-desktop {
+    display: none;
+}
+
+@media (max-width: 992px) {
+    .houzez-dashboard .logo-desktop {
+        display: block;
+    }
+}

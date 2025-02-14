@@ -2,3 +2,10 @@
 logs/*.log 
 /wp-content/debug.log
 /logs/app.log
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.wim
+*.tar.7z
+*.tar.lzma

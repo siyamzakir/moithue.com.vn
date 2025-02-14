@@ -90,6 +90,7 @@ class DB {
     public const LISTING_EDITORS = 'wp_listing_editors';
 
     public const MAIN_ADMINISTRATOR_ID = null;
+    public const LISTING_SELF_APPROVED = true;
 
     public function __construct() {
         $this->pdo = self::connect();
@@ -156,18 +157,23 @@ class DB {
     * @return int|false
     */
     public static function updateByColumns(string $table, array $columns, array $data, bool $timestamps = true) {
-        if ($timestamps) $data = array_merge($data, ['updated_at' => self::getTimestamps()['updated_at']]);
-        $setQuery = implode(', ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($data)));
+        if ($timestamps) {
+            $data = array_merge($data, ['updated_at' => self::getTimestamps()['updated_at']]);
+        }
         
+        $setQuery = implode(', ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($data)));
         $whereQuery = implode(' AND ', array_map(function($column) { return "`{$column}` = ?"; }, array_keys($columns)));
         $query = "UPDATE `{$table}` SET {$setQuery} WHERE {$whereQuery}";
-        
+
         $stmt = self::connect()->prepare($query);
-        $stmt->execute(array_merge(array_values($data), array_values($columns)));
+        $merge = array_merge(array_values($data), array_values($columns));
+
+        // Execute the query
+        $stmt->execute($merge);
 
         if ($stmt->errorCode() !== '00000') {
             $errorInfo = $stmt->errorInfo();
-            Logger::error("SQL Error: {$errorInfo[2]} - Query: {$query} - Data: " , compact('data', 'columns'));
+            Logger::error("SQL Error: {$errorInfo[2]} - Query: {$query} - Data: ", compact('data', 'columns'));
             return false;
         }
 
@@ -429,6 +435,20 @@ class DB {
         if(!is_array($assigned_editors)) return false;
         
         return in_array($user_id, $assigned_editors, true);
+    }
+
+    public static function removeEditorFromPost(int $user_id, int $post_id) {
+        $assigned_editors = self::getAssignedEditorByPostId($post_id, true, true);
+        
+        if(!is_array($assigned_editors)) return false;
+        $assigned_editors = array_diff($assigned_editors, [$user_id]);
+
+        Logger::info("removeEditorFromPost", compact('assigned_editors', 'user_id', 'post_id'));
+        return self::updateByColumns(self::LISTING_EDITORS, ['post_id' => $post_id], ['editor_ids' => json_encode($assigned_editors)]);
+    }
+
+    public static function echoDefaultUrl() {
+        return "<script>window.history.pushState({}, '', window.location.href.split('?')[0]);</script>";
     }
 }
 ?>

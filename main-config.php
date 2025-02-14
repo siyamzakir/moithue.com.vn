@@ -30,8 +30,9 @@ const SITE_URLS = [
 	'https://moithue.appszonebd.com',
 ];
 
-const WP_HOME = SITE_URLS[PRODUCTION];
-const WP_SITEURL = SITE_URLS[PRODUCTION];
+// if defined then override the value from the constant
+if(!defined('WP_HOME')) define('WP_HOME', SITE_URLS[PRODUCTION]);
+if(!defined('WP_SITEURL')) define('WP_SITEURL', SITE_URLS[PRODUCTION]);
 
 /**
  * Database configuration
