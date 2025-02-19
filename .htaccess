@@ -3,13 +3,16 @@
 # dynamically generated, and should only be modified via WordPress filters.
 # Any changes to the directives between these markers will be overwritten.
 <IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-RewriteBase /moithue/
-RewriteRule ^index\.php$ - [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /moithue/index.php [L]
+    RewriteEngine On
+    RewriteBase /moithue/
+    RewriteRule ^index\.php$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /moithue/index.php [L]
 </IfModule>
+
+# Comment out any domain-specific redirects
+# RewriteCond %{HTTP_HOST} !^yourdomain\.com$ [NC]
+# RewriteRule ^(.*)$ http://yourdomain.com/$1 [L,R=301]
 
 # END WordPress

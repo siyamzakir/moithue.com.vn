@@ -1322,10 +1322,12 @@ if( !function_exists('houzez_custom_user_profile_fields')) {
                     <th><label for="fave_author_telegram"><?php echo esc_html__('Telegram Username', 'houzez'); ?></label></th>
                     <td><input type="text" name="fave_author_telegram" id="fave_author_telegram" value="<?php echo esc_attr( get_the_author_meta( 'fave_author_telegram', $user->ID ) ); ?>" class="regular-text"></td>
                 </tr>
+                <!-- Replace Skype with Zalo By AppsZone -->
                 <tr class="user-fave_author_skype-wrap">
-                    <th><label for="fave_author_skype"><?php echo esc_html__('Skype', 'houzez'); ?></label></th>
+                    <th><label for="fave_author_skype"><?php echo esc_html__('Zalo', 'houzez'); ?></label></th>
                     <td><input type="text" name="fave_author_skype" id="fave_author_skype" value="<?php echo esc_attr( get_the_author_meta( 'fave_author_skype', $user->ID ) ); ?>" class="regular-text"></td>
                 </tr>
+                <!-- End Replace Skype with Zalo By AppsZone -->
                 <tr class="user-fave_author_custom_picture-wrap">
                     <th><label for="fave_author_custom_picture"><?php echo esc_html__('Picture Url', 'houzez'); ?></label></th>
                     <td><input type="text" name="fave_author_custom_picture" id="fave_author_custom_picture" value="<?php echo esc_attr( get_the_author_meta( 'fave_author_custom_picture', $user->ID ) ); ?>" class="regular-text"></td>

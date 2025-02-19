@@ -3016,16 +3016,16 @@ if( !function_exists('houzez_create_print')) {
                                                 </li>
                                                 <li class="agent-phone-wrap clearfix">
                                                     <?php if(!empty($agent_info['agent_phone'])) { ?>
-                                                    <i class="houzez-icon icon-phone mr-1"></i> <strong><?php echo esc_attr($agent_info['agent_phone']); ?></strong>
+                                                        <i class="houzez-icon icon-phone mr-1"></i> <strong><?php echo esc_attr($agent_info['agent_phone']); ?></strong>
                                                     <?php } ?>
 
                                                     <?php if(!empty($agent_info['agent_mobile'])) { ?>
-                                                    <i class="houzez-icon icon-mobile-phone mr-1"></i> <strong><?php echo esc_attr($agent_info['agent_mobile']); ?></strong>
+                                                        <i class="houzez-icon icon-mobile-phone mr-1"></i> <strong><?php echo esc_attr($agent_info['agent_mobile']); ?></strong>
                                                     <?php } ?>
                                                 </li>
 
                                                 <?php if(!empty($agent_info['agent_email'])) { ?>
-                                                <li><i class="houzez-icon icon-envelope mr-1"></i> <strong><?php echo esc_attr($agent_info['agent_email']); ?></strong></li>
+                                                    <li><i class="houzez-icon icon-envelope mr-1"></i> <strong><?php echo esc_attr($agent_info['agent_email']); ?></strong></li>
                                                 <?php } ?>
                                             </ul>
                                         </div><!-- d-flex -->

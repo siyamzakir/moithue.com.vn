@@ -152,15 +152,19 @@ if (houzez_check_is_elementor() && (!function_exists('elementor_theme_do_locatio
                                                 get_template_part('property-details/next-prev');
                                             }
                                             ?>
-                                        </div><!-- property-view -->
-                                    </div><!-- bt-content-wrap -->
+                                        </div>
+                                        <!-- property-view -->
+                                    </div>
+                                    <!-- bt-content-wrap -->
 
                                     <?php if ($is_full_width != 1) { ?>
                                     <div class="col-lg-4 col-md-12 bt-sidebar-wrap <?php echo esc_attr($is_sticky); ?>">
                                         <?php get_sidebar('property'); ?>
-                                    </div><!-- bt-sidebar-wrap -->
+                                    </div>
+                                    <!-- bt-sidebar-wrap -->
                                     <?php } ?>
-                                </div><!-- row -->
+                                </div>
+                                <!-- row -->
 
                                 <?php if (!empty($global_disclaimer) && $enable_disclaimer) { ?>
                                     <div class="property-disclaimer">
@@ -173,7 +177,8 @@ if (houzez_check_is_elementor() && (!function_exists('elementor_theme_do_locatio
                     } // end logged_in_to_view
 
                     ?>
-                </section><!-- listing-wrap -->
+                </section>
+                <!-- listing-wrap -->
             <?php endwhile; endif; 
         } // End fts_single_listing_enabled else condition
     } // End elementor location check
@@ -216,6 +221,17 @@ if(
         </a>
     </div>
 <?php endif; ?>
+
+<script>
+    (function ($) {
+        $(document).ready(function () {
+            const el = $($(".agent-phone a")[1]);
+            const href = `https://zalo.me/${el?.attr("href")?.slice(4)}`;
+            el.attr("target", "_blank");
+            el.attr("href", href);
+        });
+    })(jQuery);
+</script>
 
 <!-- End AppsZone Customized -->
 

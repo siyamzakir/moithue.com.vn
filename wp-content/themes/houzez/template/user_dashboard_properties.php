@@ -40,7 +40,7 @@ $mine_link = add_query_arg( 'prop_status', 'mine', $dashboard_listings );
  * START: Assign Editors to a Property
  * Edited By AppsZone
  * @since 1.0.0
- * 
+ * @updated 16/02/2025
  */
 
 $users = get_users();
@@ -69,7 +69,7 @@ if($action == 'deny_edit') {
     }
 
     // Logger::info("user_dashboard_properties.php", compact('get_user_id', 'get_post_id', 'user_id', 'updated', 'action'));
-    echo DB::echoDefaultUrl();
+    echo Section::echoDefaultUrl();
 }
 
 // Handle the assign editors action
@@ -135,7 +135,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
         Logger::error("Error: " . $e->getMessage());
     }
 
-    echo DB::echoDefaultUrl();
+    echo Section::echoDefaultUrl();
 }
 
 /* 

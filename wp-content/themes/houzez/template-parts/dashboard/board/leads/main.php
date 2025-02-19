@@ -1,4 +1,41 @@
-<?php
+<?php 
+
+/**
+ * @developed By AppsZone
+ * Starting 19 Feb. 2025 - 12:46AM
+ * @github https://github.com/appszone
+ * @website https://appszone.co.id
+ * 
+ * Start From Now
+ */
+
+// handle message from response
+$response = ['type' => '', 'message' => ''];
+$page_root_uri = explode('?', $_SERVER['REQUEST_URI'])[0];
+
+// handle lock status
+if(isset($_GET['type']) && $_GET['type'] == 'lock_status') {
+    $lead_id = isset($_GET['lead_id']) ? intval($_GET['lead_id']) : 0;
+    $is_locked = isset($_GET['is_locked']) ? intval($_GET['is_locked']) : 0;
+
+    $updater = DB::updateByColumns(DB::HOUZEZ_CRM_LEADS, ['lead_id' => $lead_id], ['is_locked' => $is_locked ? 0 : 1], false);
+
+    if($updater) {
+        $response['type'] = 'success';
+        $response['message'] = 'Lead locked updated successfully';
+    } else {
+        $response['type'] = 'danger';
+        $response['message'] = 'Failed update to lock lead';
+    }
+   
+    echo Section::echoDefaultUrl("?hpage=leads");
+}
+
+/**
+ * End Handle Lock Status
+ * @developed By AppsZone
+*/
+
 $dashboard_crm = houzez_get_template_link_2('template/user_dashboard_crm.php');
 $import_link = add_query_arg( 'hpage', 'import-leads', $dashboard_crm );
 $hpage = isset($_GET['hpage']) ? sanitize_text_field($_GET['hpage']) : '';
@@ -9,21 +46,38 @@ $leads = Houzez_leads::get_leads();
     <div class="dashboard-header-wrap">
         <div class="d-flex align-items-center">
             <div class="dashboard-header-left flex-grow-1">
-                <h1><?php echo houzez_option('dsh_leads', 'Leads'); ?></h1>         
-            </div><!-- dashboard-header-left -->
+                <h1><?php echo houzez_option('dsh_leads', 'Leads'); ?></h1>
+            </div>
+            
+            <!-- dashboard-header-left  -->
             <div class="dashboard-header-right">
                 <a class="btn btn-primary open-close-slide-panel" href="#"><?php esc_html_e('Add New Lead', 'houzez'); ?></a>
-            </div><!-- dashboard-header-right -->
-        </div><!-- d-flex -->
-    </div><!-- dashboard-header-wrap -->
-</header><!-- .header-main-wrap -->
+            </div>
+            <!-- dashboard-header-right -->
+        </div>
+        <!-- d-flex -->
+
+        <!-- Handle notification messages with close button -->
+        <?php if(!empty($response['type']) && !empty($response['message'])) { ?>
+            <div class="alert alert-<?php echo esc_attr($response['type']); ?> alert-dismissible fade show d-flex justify-content-between" role="alert"
+                style="margin: 20px 0 -55px 0px;"
+            >
+                <div><?php echo esc_attr($response['message']); ?></div>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="margin-top: -4px;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        <?php } ?>
+    </div>
+</header>
+<!-- dashboard-header-wrap end -->
+
+<!-- .header-main-wrap -->
 <section class="dashboard-content-wrap leads-main-wrap">
     <div class="dashboard-content-inner-wrap">
-        
         <?php get_template_part('template-parts/dashboard/statistics/statistic-leads'); ?>
-
+        
         <div class="dashboard-content-block-wrap">
-
             <div class="dashboard-tool-block">
                 <div class="dashboard-tool-buttons-block">
                     <div class="dashboard-tool-button">
@@ -41,8 +95,9 @@ $leads = Houzez_leads::get_leads();
                             <?php echo esc_attr($leads['data']['total_records']); ?> <?php esc_html_e('Results Found', 'houzez'); ?>
                         </div>
                     </div>
-                </div><!-- dashboard-tool-buttons-block -->
+                </div>
                 
+                <!-- dashboard-tool-buttons-block -->
                 <div class="dashboard-tool-search-block">
                     <div class="dashboard-crm-search-wrap">
                         <div class="d-flex">
@@ -62,10 +117,12 @@ $leads = Houzez_leads::get_leads();
                                 </div>
                             </div>
                         </div>
-                    </div><!-- dashboard-crm-search-wrap -->
-                </div><!-- dashboard-tool-search-block -->
-                
-            </div><!-- dashboard-tool-block -->
+                    </div>
+                    <!-- dashboard-crm-search-wrap -->
+                </div>
+                <!-- dashboard-tool-search-block -->
+            </div>
+            <!-- dashboard-tool-block -->
 
             <?php
             $dashboard_crm = houzez_get_template_link_2('template/user_dashboard_crm.php');
@@ -90,8 +147,7 @@ $leads = Houzez_leads::get_leads();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
-                        foreach ($leads['data']['results'] as $result) { 
+                        <?php foreach ($leads['data']['results'] as $result) { 
                             $detail_link = add_query_arg(
                                 array(
                                     'hpage' => 'lead-detail',
@@ -145,15 +201,24 @@ $leads = Houzez_leads::get_leads();
                                         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
                                             <a class="dropdown-item" href="<?php echo esc_url($detail_link); ?>"><?php esc_html_e('Details', 'houzez'); ?></a>
 
-                                            <a class="edit-lead dropdown-item open-close-slide-panel" data-id="<?php echo intval($result->lead_id)?>" href="#"><?php esc_html_e('Edit', 'houzez'); ?></a>
-
-                                            <a href="" class="delete-lead dropdown-item" data-id="<?php echo intval($result->lead_id); ?>" data-nonce="<?php echo wp_create_nonce('delete_lead_nonce') ?>"><?php esc_html_e('Delete', 'houzez'); ?></a>
+                                            <!-- Lock Lead Customized by AppsZone -->
+                                            <a class="lock-lead dropdown-item"
+                                                data-id="<?php echo intval($result->lead_id)?>"
+                                                href='<?= "{$page_root_uri}?hpage=leads&type=lock_status&lead_id={$result->lead_id}&is_locked={$result->is_locked}"; ?>'
+                                            >
+                                                <?php esc_html_e($result->is_locked ? 'Unlock Now' : 'Lock Now', 'houzez'); ?>
+                                            </a>
+                                            
+                                            <?php if(houzez_is_admin() || DB::DEALS_LEADS_MANAGE_BY_SELF) { ?>
+                                                <a class="edit-lead dropdown-item open-close-slide-panel" data-id="<?php echo intval($result->lead_id)?>" href="#"><?php esc_html_e('Edit', 'houzez'); ?></a>
+                                                <a href="#" class="delete-lead dropdown-item" data-id="<?php echo intval($result->lead_id); ?>" data-nonce="<?php echo wp_create_nonce('delete_lead_nonce') ?>"><?php esc_html_e('Delete', 'houzez'); ?></a>
+                                            <?php } ?>
+                                            <!-- End Lock Lead Customized by AppsZone -->
                                         </div>
                                     </div>
                                 </td>
                             </tr>
-                        <?php
-                        } ?>
+                        <?php } ?>
                     </tbody>
                 </table>
             <?php

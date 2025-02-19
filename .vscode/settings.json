@@ -1,16 +1,40 @@
 {
     "cSpell.words": [
         "ABSPATH",
+        "APPLEMUSIC",
+        "behance",
+        "commentmeta",
         "COOKIEHASH",
+        "Dribbble",
         "FAVETHEMES",
+        "firstname",
+        "googleplus",
+        "hzel",
+        "lastname",
+        "lineapp",
         "loggedin",
         "NAVIGATIONS",
+        "Pinterest",
         "propid",
         "proptype",
         "REALTYNA",
         "REVSLIDER",
         "SITEURL",
+        "Soundcloud",
         "termmeta",
-        "USERMETA"
-    ]
+        "tiktok",
+        "useremail",
+        "userlangs",
+        "USERMETA",
+        "usermobile",
+        "userphone",
+        "Zalo"
+    ],
+    "cursor.diffs.useCharacterLevelDiffs": true,
+    "cursor.cpp.enablePartialAccepts": true,
+    "cursor.general.enableShadowWorkspace": true,
+    "cursor.general.disableHttp2": true,
+    "cursor.preferNotificationsSameAsChat": true,
+    "cursor.terminal.usePreviewBox": true,
+    "editor.bracketPairColorization.independentColorPoolPerBracketType": true
 }

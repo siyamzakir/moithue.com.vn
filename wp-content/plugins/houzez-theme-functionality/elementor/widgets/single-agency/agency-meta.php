@@ -498,7 +498,6 @@ class Houzez_Agency_Meta extends Widget_Base {
 					$meta_html = '<div class="hzel-agency-social"><a target="_blank" href="'.esc_url( $field_value ).'">
 									'.$icon.'
 								</a></div>';
-
 				} else {
 
 					$meta_html = '<div class="hzel-agency-social">';
@@ -555,8 +554,8 @@ class Houzez_Agency_Meta extends Widget_Base {
 						$meta_html .= '<a class="btn-lineapp" target="_blank" href="https://line.me/ti/p/~'.esc_attr($field_value).'">
 								<i class="houzez-icon icon-lineapp-5"></i>
 							</a>';
-					} else if( $custom_field == 'fave_agency_skype' ) {
-						$meta_html .= '<a class="btn-skype" target="_blank" href="skype:'.esc_attr( $agency_skype ).'?chat">
+					} else if($custom_field == 'fave_agency_skype') {
+						$meta_html .= '<a class="btn-skype" target="_blank" href="skype:'.esc_attr($field_value).'?chat">
 								<i class="houzez-icon icon-video-meeting-skype"></i>
 							</a>';
 					} else if( $custom_field == 'fave_agency_telegram' ) {

@@ -90,12 +90,14 @@ $website_url            =   get_the_author_meta( 'user_url' , $userID );
                     </div>
                 </div>
 
+                <!-- Replace Skype with Zalo By AppsZone -->
                 <div class="col-md-6 col-sm-12">
                     <div class="form-group">
-                        <label><?php esc_html_e( 'Skype', 'houzez' ); ?></label>
-                        <input class="form-control" name="userskype" value="<?php echo esc_attr( $user_skype );?>" placeholder="<?php esc_html_e( 'Enter your Skype ID', 'houzez' ); ?>" type="text">
+                        <label><?php esc_html_e( 'Zalo', 'houzez' ); ?></label>
+                        <input class="form-control" name="userskype" value="<?php echo esc_attr($user_skype);?>" placeholder="<?php esc_html_e( 'Enter your Zalo ID', 'houzez' ); ?>" type="text">
                     </div>
                 </div>
+                <!-- End Replace Skype with Zalo By AppsZone -->
 
                 <div class="col-md-6 col-sm-12">
                     <div class="form-group">

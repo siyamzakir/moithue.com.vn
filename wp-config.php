@@ -127,11 +127,14 @@ if (!defined('ABSPATH')) {
 define('DB_PATH', ABSPATH . 'modules/DB.php');
 define('LOG_PATH', ABSPATH . 'logs/log.php');
 
-/** Sets up WordPress vars and included files. */
-require_once ABSPATH . 'wp-settings.php';
-
 // Include the DB and LOG modules
 require_once DB_PATH;
 require_once LOG_PATH;
 
-
+/** 
+ * Requires Globally
+ * Sets up WordPress vars and included files.
+ * 
+ */
+require_once ABSPATH . 'modules/section.php';
+require_once ABSPATH . 'wp-settings.php';

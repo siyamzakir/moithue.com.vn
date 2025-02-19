@@ -26,15 +26,12 @@ $lost_link = add_query_arg(
     ), $dashboard_crm
 );
 
-if( isset($_GET['tab']) && $_GET['tab'] == 'active' ) {
+if(isset($_GET['tab']) && $_GET['tab'] == 'active') {
     $active_deal = 'active';
-
-} else if( isset($_GET['tab']) && $_GET['tab'] == 'won' ) {
+} else if(isset($_GET['tab']) && $_GET['tab'] == 'won') {
     $won_deal = 'active';
-
-} else if( isset($_GET['tab']) && $_GET['tab'] == 'lost' ) {
+} else if(isset($_GET['tab']) && $_GET['tab'] == 'lost') {
     $lost_deal = 'active';
-
 } else {
     $active_deal = 'active';
 }
@@ -42,12 +39,14 @@ if( isset($_GET['tab']) && $_GET['tab'] == 'active' ) {
 <header class="header-main-wrap dashboard-header-main-wrap">
     <div class="dashboard-header-wrap">
         <div class="d-flex align-items-center">
+            <!-- dashboard-header-left -->
             <div class="dashboard-header-left flex-grow-1">
                 <h1><?php echo houzez_option('dsh_deals', 'Deals'); ?></h1>         
-            </div><!-- dashboard-header-left -->
+            </div>
+            <!-- dashboard-header-right -->
             <div class="dashboard-header-right">
                 <a class="btn btn-primary open-close-deal-panel" href="#"><?php esc_html_e('Add New Deal', 'houzez'); ?></a>
-            </div><!-- dashboard-header-right -->
+            </div>
         </div><!-- d-flex -->
     </div><!-- dashboard-header-wrap -->
 </header><!-- .header-main-wrap -->
@@ -81,9 +80,10 @@ if( isset($_GET['tab']) && $_GET['tab'] == 'active' ) {
                 <thead>
                     <tr>
                         <th class="table-nowrap"><?php esc_html_e('Title', 'houzez'); ?></th>
+                        <th class="table-nowrap"><?php esc_html_e('Property', 'houzez'); ?></th>
                         <th class="table-nowrap"><?php esc_html_e('Contact Name', 'houzez'); ?></th>
                         <?php if( houzez_is_admin() ) { ?>
-                        <th class="table-nowrap"><?php esc_html_e('Agent', 'houzez'); ?></th>
+                            <th class="table-nowrap"><?php esc_html_e('Agent', 'houzez'); ?></th>
                         <?php } ?>
                         <th class="table-nowrap"><?php esc_html_e('Status', 'houzez'); ?></th>
                         <th class="table-nowrap"><?php esc_html_e('Next Action', 'houzez'); ?></th>
@@ -92,7 +92,9 @@ if( isset($_GET['tab']) && $_GET['tab'] == 'active' ) {
                         <th class="table-nowrap"><?php esc_html_e('Last Contact Date', 'houzez'); ?></th>
                         <th class="table-nowrap"><?php esc_html_e('Phone', 'houzez'); ?></th>
                         <th class="table-nowrap"><?php esc_html_e('Email', 'houzez'); ?></th>
-                        <th class="table-nowrap"><?php esc_html_e('Actions', 'houzez'); ?></th>
+                        <?php if(houzez_is_admin() || DB::DEALS_LEADS_MANAGE_BY_SELF) { ?>
+                            <th class="table-nowrap"><?php esc_html_e('Actions', 'houzez'); ?></th>
+                        <?php } ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -111,9 +113,9 @@ if( isset($_GET['tab']) && $_GET['tab'] == 'active' ) {
                         <td colspan="2" class="text-right no-wrap">
                             <div class="leads-pagination-wrap">
                                 <?php
-                                $total_pages = ceil($deals['data']['total_records'] / $deals['data']['items_per_page']);
-                                $current_page = $deals['data']['page'];
-                                houzez_crm_pagination($total_pages, $current_page);
+                                    $total_pages = ceil($deals['data']['total_records'] / $deals['data']['items_per_page']);
+                                    $current_page = $deals['data']['page'];
+                                    houzez_crm_pagination($total_pages, $current_page);
                                 ?>
                             </div> <!-- leads-pagination-wrap -->
                         </td>

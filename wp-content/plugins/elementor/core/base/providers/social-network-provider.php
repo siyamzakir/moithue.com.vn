@@ -238,7 +238,7 @@ class Social_Network_Provider {
 		];
 
 		static::$social_networks[ static::SKYPE ] = [
-			'text' => esc_html__( 'Skype', 'elementor' ),
+			'text' => esc_html__( 'Zalo', 'elementor' ),
 			'icon' => 'fab fa-skype',
 			'name' => 'skype',
 		];

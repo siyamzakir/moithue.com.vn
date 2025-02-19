@@ -10,6 +10,8 @@
  * User: syedamirali
  * Date: 12/02/2025
  * Time: 5:18 PM
+ * 
+ * @updated 16/02/2025
  */
 global $current_user, $hide_add_prop_fields, $required_fields, $is_multi_steps, $prop_meta_data;
 

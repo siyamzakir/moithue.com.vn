@@ -4,11 +4,11 @@ require_once __DIR__ . '/../main-config.php';
 require_once __DIR__ . '/../logs/log.php';
 
 trait MigrationsTrait {
-
     public static function migrateListingEditorsTable() {
         // SQL query to create the wp_listing_editors table
+        $table = DB::LISTING_EDITORS;
         $query = "
-            CREATE TABLE IF NOT EXISTS `wp_listing_editors` (
+            CREATE TABLE IF NOT EXISTS `{$table}` (
                 `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `post_id` BIGINT UNSIGNED,
                 `author_id` BIGINT UNSIGNED,
@@ -44,6 +44,22 @@ trait MigrationsTrait {
         return $stmt->rowCount();
     }
 
+    // add a new column 'is_locked' to the wp_houzez_crm_leads table and default true
+    public static function updateCRMLeadsTable() {
+        $table = DB::HOUZEZ_CRM_LEADS;
+
+        // check if the column exists
+        $query = "SHOW COLUMNS FROM {$table} LIKE 'is_locked'";
+        $stmt = self::connect()->prepare($query);
+        $stmt->execute();
+        $columnExists = $stmt->fetchColumn();
+
+        if(!$columnExists) {
+            $query = "ALTER TABLE {$table} ADD COLUMN `is_locked` TINYINT(1) NOT NULL DEFAULT '0' AFTER `status`";
+            $stmt = self::connect()->prepare($query);
+            $stmt->execute();
+        }
+    } 
 }
 
 class DB {
@@ -90,12 +106,28 @@ class DB {
     public const LISTING_EDITORS = 'wp_listing_editors';
 
     public const MAIN_ADMINISTRATOR_ID = null;
-    public const LISTING_SELF_APPROVED = true;
+    public const LISTING_SELF_APPROVED = false;
+    public const DEALS_LEADS_MANAGE_BY_SELF = false;
 
     public function __construct() {
         $this->pdo = self::connect();
     }
 
+    /**
+     * Retrieves a list of all tables in the database.
+     *
+     * This method constructs a SQL query to show all tables present in the database.
+     * It prepares and executes the query using the PDO connection established in the
+     * class. The results are fetched as an associative array, which contains the names
+     * of the tables. This method is useful for obtaining a comprehensive overview of
+     * the database structure, allowing developers to understand what tables are available
+     * for querying or manipulation.
+     *
+     * @return array Returns an associative array of all tables in the database.
+     *               Each entry in the array corresponds to a table name. If there are
+     *               no tables in the database, an empty array is returned. In case of
+     *               an error during the execution of the query, an exception will be thrown.
+     */
     public static function showAllTables() {
         $query = "SHOW TABLES";
         $stmt = self::connect()->prepare($query);
@@ -103,10 +135,47 @@ class DB {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Establishes a connection to the database using PDO.
+     *
+     * This method creates a new PDO instance, which represents a connection to the database.
+     * It uses the configuration parameters defined in the DATABASE_CONFIGURATION constant
+     * to specify the database driver, host, database name, username, and password.
+     * 
+     * The connection is essential for executing SQL queries and interacting with the database.
+     * It is important to handle any potential exceptions that may arise during the connection
+     * process, such as incorrect credentials or unreachable database server.
+     *
+     * @return PDO Returns a PDO instance representing the connection to the database.
+     *              This instance can be used to prepare and execute SQL statements.
+     *              If the connection fails, an exception will be thrown.
+     *
+     * @throws PDOException If the connection to the database fails, a PDOException will be thrown,
+     *                      providing details about the error encountered.
+     */
     public static function connect() {
-        return new PDO(DATABASE_CONFIGURATION['driver'] . ':host=' . DATABASE_CONFIGURATION['host'] . ';dbname=' . DATABASE_CONFIGURATION['database'], DATABASE_CONFIGURATION['username'], DATABASE_CONFIGURATION['password']);
+        try {
+            return new PDO(DATABASE_CONFIGURATION['driver'] . ':host=' . DATABASE_CONFIGURATION['host'] . ';dbname=' . DATABASE_CONFIGURATION['database'], DATABASE_CONFIGURATION['username'], DATABASE_CONFIGURATION['password']);
+        } catch (PDOException $e) {
+            Logger::error("SQL Error: {$e->getMessage()}");
+            return null;
+        }
     }
 
+    /**
+     * Retrieves all records from the users table.
+     *
+     * This method constructs a SQL query to select all columns from the given table.
+     * It prepares and executes the query using the PDO connection established in the
+     * class. The results are fetched as an associative array, allowing easy access
+     * to the data. This method is useful for obtaining a complete list of records
+     * from a table, which can be used for display or further processing.
+     *
+     * @param string $table The name of the table to query.
+     * @return array Returns an associative array of all records from the specified table.
+     *               If the table is empty, an empty array is returned. In case of an error,
+     *               an exception will be thrown.
+     */
     public static function getAllUsers(array $columns = ['*']) {
         $query = "SELECT " . implode(', ', $columns) . " FROM wp_users";
         $stmt = self::connect()->prepare($query);
@@ -114,6 +183,24 @@ class DB {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Find data by columns in a specified table.
+     *
+     * This method constructs a SQL query to retrieve a single record from the specified
+     * table based on the provided conditions. It allows for filtering results using
+     * an associative array of conditions, where the keys represent column names
+     * and the values represent the values to match. The method also supports selecting
+     * specific columns and can order the results based on the specified criteria.
+     *
+     * @param string $table The name of the table to query.
+     * @param array $conditions An associative array of conditions to filter the results.
+     *                          Each key is a column name, and each value is the value to match.
+     * @param array $columns An optional array of specific columns to select. Defaults to ['*'].
+     * @param string $by Determines the order of the results (default is 'latest').
+     *                   If set to 'latest', the results will be ordered by the 'id' column in descending order.
+     * @return array|false Returns an associative array of the first matching record or false on failure.
+     *                     If no records match the conditions, an empty array is returned.
+     */
     public static function findById(string $table, int $id, string $by = 'latest') {
         $query = "SELECT * FROM `{$table}` WHERE `id` = ? LIMIT 1";
         if ($by === 'latest') {
@@ -125,27 +212,129 @@ class DB {
     }
 
     /**
-    * Find data by columns
-    * @param string $table
-    * @param array $conditions
-    * @param string $by
-    * @return array|false
-    */
-    public static function findByColumns(string $table, array $conditions, string $by = 'latest') {
-        $whereQuery = implode(' AND ', array_map(function($column) {
-            return "`{$column}` = ?";
-        }, array_keys($conditions)));
+     * Find data by columns in a specified table.
+     *
+     * This method constructs a SQL query to retrieve a single record from the specified
+     * table based on the provided conditions. It allows for filtering results using
+     * an associative array of conditions, where the keys represent column names
+     * and the values represent the values to match. The method also supports selecting
+     * specific columns and can order the results based on the specified criteria.
+     *
+     * @param string $table The name of the table to query.
+     * @param array $conditions An associative array of conditions to filter the results.
+     *                          Each key is a column name, and each value is the value to match.
+     * @param string $by Determines the order of the results (default is 'latest').
+     *                   If set to 'latest', the results will be ordered by the 'id' column in descending order.
+     * @return array|false Returns an associative array of the first matching record or false on failure.
+     *                     If no records match the conditions, an empty array is returned.
+     */
+    public static function findByColumns(string $table, array $conditions, array $columns = ['*'], string $by = 'latest') {
+        try {
+            $whereQuery = implode(' AND ', array_map(function($column) {
+                return "`{$column}` = ?";
+            }, array_keys($conditions)));
+    
+            $cols = implode(', ', $columns);
+            $query = "SELECT {$cols} FROM `{$table}` WHERE {$whereQuery}";
+    
+            if ($by === 'latest') {
+                $query .= " ORDER BY `id` DESC ";
+            }
 
-        $query = "SELECT * FROM `{$table}` WHERE {$whereQuery}";
-
-        if ($by === 'latest') {
-            $query .= " ORDER BY `id` DESC LIMIT 1";
+            $query .= "LIMIT 1";
+    
+            $stmt = self::connect()->prepare($query);
+            $stmt->execute(array_values($conditions));
+    
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            Logger::error("SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($conditions));
+            return false;
         }
+    }
 
-        $stmt = self::connect()->prepare($query);
-        $stmt->execute(array_values($conditions));
+    /**
+      * Get records from a specified table based on an array of conditions.
+      *
+      * This function constructs a SQL query to retrieve records from the specified table
+      * using the provided conditions. It allows for selecting specific columns and can
+      * order the results based on the specified criteria.
+      *
+      * @param string $table The name of the table to query.
+      * @param array $conditions The conditions to filter the results.
+      * @param array $columns The columns to select from the table. Default is ['*'] to select all columns.
+      * @param string $by Determines the order of the results (default is 'latest').
+      * @return array|false Returns an array of results or false on failure.
+      */
+    public static function getByColumns(string $table, array $conditions, array $columns = ['*'], string $by = 'latest') {
+        try {
+            $whereQuery = implode(' AND ', array_map(function($column) {
+                return "`{$column}` = ?";
+            }, array_keys($conditions)));
+    
+            $cols = implode(', ', $columns);
+            $query = "SELECT {$cols} FROM `{$table}` WHERE {$whereQuery}";
+    
+            if ($by === 'latest') {
+                $query .= " ORDER BY `id` DESC";
+            }
+    
+            $stmt = self::connect()->prepare($query);
+            $stmt->execute(array_values($conditions));
+    
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            Logger::error("SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($conditions));
+            return false;
+        }
+    }
 
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+    /**
+     * Get data by ids and columns
+     * This function retrieves records from the specified table based on an array of IDs and additional conditions.
+     * It allows for selecting specific columns and can order the results by the latest entry.
+     * 
+     * @param string $table The name of the table to query.
+     * @param array $ids An array of IDs to filter the results.
+     * @param array $conditions Additional conditions for the query.
+     * @param array $columns The columns to select from the table.
+     * @param string $by Determines the order of the results (default is 'latest').
+     * @return array|false Returns an array of results or false on failure.
+     */
+    public static function getByIdsColumns(string $table, array $ids, array $conditions = [], array $columns = ['*'], string $by = 'latest') {
+        try {
+            // Create placeholders for each ID
+            $cols = implode(', ', $columns);
+            $idPlaceholders = implode(', ', array_fill(0, count($ids), '?'));
+    
+            $params = []; // Array to hold all parameters for the SQL execution
+            $whereParts = []; // Array to hold parts of the WHERE clause
+    
+            // Handle additional conditions
+            foreach ($conditions as $key => $value) {
+                $whereParts[] = "`$key` = ?";
+                $params[] = $value; // Add condition values to parameters array
+            }
+    
+            // Add IDs condition
+            $whereParts[] = "`ID` IN ($idPlaceholders)";
+            $params = array_merge($params, $ids); // Merge condition values with IDs
+    
+            $where = implode(' AND ', $whereParts);
+            $query = "SELECT {$cols} FROM `{$table}` WHERE {$where}";
+    
+            if ($by === 'latest') {
+                $query .= " ORDER BY `id` DESC";
+            }
+            
+            $stmt = self::connect()->prepare($query);
+            $stmt->execute($params);  // Execute with combined parameters
+    
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            Logger::error("SQL Error: {$e->getMessage()} \n- Query: {$query} \n- Data: " . json_encode($params));
+            return false;
+        }
     }
 
     /**
@@ -229,36 +418,57 @@ class DB {
         return (int) $conn->lastInsertId();
     }
 
+    /**
+     * Update a record in a specified table by ID.
+     *
+     * @param string $table The name of the table to update.
+     * @param int $id The ID of the record to update.
+     * @param array $data The data to update.
+     * @param bool $timestamps Whether to update the timestamps.
+     * @return int|null The number of rows affected by the update operation, or null if the data array is empty.
+     */
     public static function update(string $table, int $id, array $data, bool $timestamps = true): ?int {
-        if (empty($data)) {
-            Logger::error("Data array cannot be empty.");
-            return null; 
-        }
-
-        $setQuery = [];
-        foreach ($data as $key => $value) {
-            $setQuery[] = "`{$key}` = ?";
-        }
-        
-        $setQueryString = implode(', ', $setQuery);
-        $query = "UPDATE `{$table}` SET {$setQueryString} WHERE `id` = ?";
-
-        if ($timestamps) {
-            $data['updated_at'] = self::getTimestamps()['updated_at'];
-        }
-
-        $stmt = self::connect()->prepare($query);
-        $params = array_merge(array_values($data), [$id]);
-
-        if (!$stmt->execute($params)) {
-            $errorInfo = $stmt->errorInfo();
-            Logger::error("SQL Error: {$errorInfo[2]} - Query: {$query} - Data: " . json_encode($params));
+        try {
+            if (empty($data)) {
+                Logger::error("Data array cannot be empty.");
+                return null; 
+            }
+    
+            if ($timestamps) {
+                $data['updated_at'] = self::getTimestamps()['updated_at'];
+            }
+    
+            $setQuery = [];
+            foreach ($data as $key => $value) {
+                $setQuery[] = "`{$key}` = ?";
+            }
+            
+            $setQueryString = implode(', ', $setQuery);
+            $query = "UPDATE `{$table}` SET {$setQueryString} WHERE `ID` = ?";
+    
+            $stmt = self::connect()->prepare($query);
+            $params = array_merge(array_values($data), [$id]);
+    
+            if (!$stmt->execute($params)) {
+                $errorInfo = $stmt->errorInfo();
+                Logger::error("SQL Error: {$errorInfo[2]} - Query: {$query} - Data: " . json_encode($params));
+                return null;
+            }
+    
+            return $stmt->rowCount(); // Return the number of affected rows
+        } catch (PDOException $e) {
+            Logger::error("SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($params));
             return null;
         }
-
-        return $stmt->rowCount(); // Return the number of affected rows
     }
 
+    /**
+     * Delete a record from a specified table by ID.
+     *
+     * @param string $table The name of the table to delete from.
+     * @param int $id The ID of the record to delete.
+     * @return int The number of rows affected by the delete operation.
+     */
     public static function delete(string $table, int $id) {
         $query = "DELETE FROM `{$table}` WHERE `id` = ?";
         $stmt = self::connect()->prepare($query);
@@ -266,10 +476,21 @@ class DB {
         return $stmt->rowCount();
     }
 
+    /**
+     * Get the last inserted ID.
+     *
+     * @return int The last inserted ID.
+     */
     public static function getLastInsertId() {
         return self::connect()->lastInsertId();
     }
 
+    /**
+     * Get the number of rows in a specified table.
+     *
+     * @param string $table The name of the table to count rows from.
+     * @return int The number of rows in the table.
+     */
     public static function getRowCount(string $table) {
         $query = "SELECT COUNT(*) FROM `{$table}`";
         $stmt = self::connect()->prepare($query);
@@ -277,6 +498,12 @@ class DB {
         return $stmt->fetchColumn();
     }
 
+    /**
+     * Get the columns of a specified table.
+     *
+     * @param string $table The name of the table to retrieve columns from.
+     * @return array An associative array containing the column details.
+     */
     public static function getTableColumns(string $table) {
         $query = "SHOW COLUMNS FROM `{$table}`";
         $stmt = self::connect()->prepare($query);
@@ -284,6 +511,14 @@ class DB {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Get records from a specified table.
+     *
+     * @param string $table The name of the table to query.
+     * @param array $columns The columns to select. Defaults to all columns.
+     * @param string $by Determines the order of the results. Defaults to 'latest', which orders by ID descending.
+     * @return array The fetched records as an associative array.
+     */
     public static function get(string $table, array $columns = ['*'], string $by = 'latest') {
         $query = "SELECT " . implode(', ', $columns) . " FROM `{$table}`";
         if ($by === 'latest') {
@@ -292,61 +527,13 @@ class DB {
         $stmt = self::connect()->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public static function getWhere(string $table, array $columns = ['*'], array $where = [], string $by = 'latest') {
-        $whereQuery = implode(' AND ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($where)));
-        $query = "SELECT " . implode(', ', $columns) . " FROM `{$table}` WHERE {$whereQuery}";
-
-        if ($by === 'latest') {
-            $query = "SELECT " . implode(', ', $columns) . " FROM `{$table}` WHERE {$whereQuery} ORDER BY `id` DESC LIMIT 1";
-        }
-
-        $stmt = self::connect()->prepare($query);
-        $stmt->execute(array_values($where));
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public static function getOrderBy(string $table, array $columns = ['*'], array $where = [], string $orderBy = 'id', string $order = 'ASC') {
-        $whereQuery = implode(' AND ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($where)));
-        $query = "SELECT " . implode(', ', $columns) . " FROM `{$table}` WHERE {$whereQuery} ORDER BY `{$orderBy}` {$order}";
-        $stmt = self::connect()->prepare($query);
-        $stmt->execute(array_values($where));
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public static function getLimit(string $table, array $columns = ['*'], array $where = [], int $limit = 10, int $offset = 0) {
-        $whereQuery = implode(' AND ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($where)));
-        $query = "SELECT " . implode(', ', $columns) . " FROM `{$table}` WHERE {$whereQuery} LIMIT {$limit} OFFSET {$offset}";
-        $stmt = self::connect()->prepare($query);
-        $stmt->execute(array_values($where));
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public static function getPagination(string $table, array $columns = ['*'], array $where = [], int $limit = 10, int $offset = 0) {
-        $whereQuery = implode(' AND ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($where)));
-        $query = "SELECT " . implode(', ', $columns) . " FROM `{$table}` WHERE {$whereQuery} LIMIT {$limit} OFFSET {$offset}";
-        $stmt = self::connect()->prepare($query);
-        $stmt->execute(array_values($where));
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public static function getPaginationCount(string $table, array $where = []) {
-        $whereQuery = implode(' AND ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($where)));
-        $query = "SELECT COUNT(*) FROM `{$table}` WHERE {$whereQuery}";
-        $stmt = self::connect()->prepare($query);
-        $stmt->execute(array_values($where));
-        return $stmt->fetchColumn();
-    }
-
-    public static function getPaginationWithTotal(string $table, array $columns = ['*'], array $where = [], int $limit = 10, int $offset = 0) {
-        $whereQuery = implode(' AND ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($where)));
-        $query = "SELECT " . implode(', ', $columns) . " FROM `{$table}` WHERE {$whereQuery} LIMIT {$limit} OFFSET {$offset}";
-        $stmt = self::connect()->prepare($query);
-        $stmt->execute(array_values($where));
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
+    } 
+ 
+    /**
+     * Get timestamps
+     * @param string $timestamp
+     * @return array
+     */
     public static function getTimestamps(string $timestamp = 'now') {
         $timestamp = $timestamp === 'now' ? time() : $timestamp;
         $timestamp = date('Y-m-d H:i:s', $timestamp);
@@ -443,12 +630,7 @@ class DB {
         if(!is_array($assigned_editors)) return false;
         $assigned_editors = array_diff($assigned_editors, [$user_id]);
 
-        Logger::info("removeEditorFromPost", compact('assigned_editors', 'user_id', 'post_id'));
         return self::updateByColumns(self::LISTING_EDITORS, ['post_id' => $post_id], ['editor_ids' => json_encode($assigned_editors)]);
-    }
-
-    public static function echoDefaultUrl() {
-        return "<script>window.history.pushState({}, '', window.location.href.split('?')[0]);</script>";
     }
 }
 ?>

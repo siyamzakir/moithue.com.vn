@@ -202,7 +202,7 @@ if ($property_status != 'expired' && $property_status != 'disapproved') {
                     </a>
                 <?php } ?>
 
-                <?php if (in_array($post->post_status, array('pending', 'disapproved')) && DB::LISTING_SELF_APPROVED) { ?> 
+                <?php if (in_array($post->post_status, array('pending', 'disapproved')) && (DB::LISTING_SELF_APPROVED || $is_user_can_manage)) { ?> 
                         <a href='#' data-propid='<?= $post_id ?>' data-type='approve' class='dropdown-item houzez-prop-action-js'>
                             <strong><?= esc_html__('Approve', 'houzez') ?></strong>
                         </a>
