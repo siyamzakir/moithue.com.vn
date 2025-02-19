@@ -9,3 +9,4 @@ logs/*.log
 *.tar.wim
 *.tar.7z
 *.tar.lzma
+/zunk/
