@@ -248,7 +248,7 @@ class DB {
     
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            Logger::error("SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($conditions));
+            Logger::error("findByColumns: SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($conditions));
             return false;
         }
     }
@@ -284,7 +284,7 @@ class DB {
     
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            Logger::error("SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($conditions));
+            Logger::error("getByColumns: SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($conditions));
             return false;
         }
     }
@@ -332,7 +332,7 @@ class DB {
     
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            Logger::error("SQL Error: {$e->getMessage()} \n- Query: {$query} \n- Data: " . json_encode($params));
+            Logger::error("getByIdsColumns: SQL Error: {$e->getMessage()} \n- Query: {$query} \n- Data: " . json_encode($params));
             return false;
         }
     }
@@ -346,27 +346,32 @@ class DB {
     * @return int|false
     */
     public static function updateByColumns(string $table, array $columns, array $data, bool $timestamps = true) {
-        if ($timestamps) {
-            $data = array_merge($data, ['updated_at' => self::getTimestamps()['updated_at']]);
-        }
-        
-        $setQuery = implode(', ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($data)));
-        $whereQuery = implode(' AND ', array_map(function($column) { return "`{$column}` = ?"; }, array_keys($columns)));
-        $query = "UPDATE `{$table}` SET {$setQuery} WHERE {$whereQuery}";
+        try {
+            if ($timestamps) {
+                $data = array_merge($data, ['updated_at' => self::getTimestamps()['updated_at']]);
+            }
+            
+            $setQuery = implode(', ', array_map(function($key) { return "`{$key}` = ?"; }, array_keys($data)));
+            $whereQuery = implode(' AND ', array_map(function($column) { return "`{$column}` = ?"; }, array_keys($columns)));
+            $query = "UPDATE `{$table}` SET {$setQuery} WHERE {$whereQuery}";
 
-        $stmt = self::connect()->prepare($query);
-        $merge = array_merge(array_values($data), array_values($columns));
+            $stmt = self::connect()->prepare($query);
+            $merge = array_merge(array_values($data), array_values($columns));
 
-        // Execute the query
-        $stmt->execute($merge);
+            // Execute the query
+            $stmt->execute($merge);
 
-        if ($stmt->errorCode() !== '00000') {
-            $errorInfo = $stmt->errorInfo();
-            Logger::error("SQL Error: {$errorInfo[2]} - Query: {$query} - Data: ", compact('data', 'columns'));
+            if ($stmt->errorCode() !== '00000') {
+                $errorInfo = $stmt->errorInfo();
+                Logger::error("updateByColumns: SQL Error: {$errorInfo[2]} - Query: {$query} - Data: ", compact('data', 'columns'));
+                return false;
+            }
+
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            Logger::error("updateByColumns: SQL Error: {$e->getMessage()} - Query: {$query} - Data: ", compact('data', 'columns'));
             return false;
         }
-
-        return $stmt->rowCount();
     }
 
     /**
@@ -377,45 +382,50 @@ class DB {
     * @return int|false
     */
     public static function create(string $table, array $data, bool $timestamps = true): ?int {
-        if (empty($data)) {
-            Logger::error("Data array cannot be empty.");
-            return null;
-        }
+        try {
+            if (empty($data)) {
+                Logger::error("Data array cannot be empty.");
+                return null;
+            }
 
-        $conn = self::connect();
-        $columns = [];
-        $placeholders = [];
+            $conn = self::connect();
+            $columns = [];
+            $placeholders = [];
 
-        foreach ($data as $key => $value) {
-            $columns[] = "`{$key}`";
-            $placeholders[] = "?";
-        }
+            foreach ($data as $key => $value) {
+                $columns[] = "`{$key}`";
+                $placeholders[] = "?";
+            }
 
-        if ($timestamps) {
-            $timestamps = self::getTimestamps();
-            $data['created_at'] = $timestamps['created_at'];
-            $data['updated_at'] = $timestamps['updated_at'];
+            if ($timestamps) {
+                $timestamps = self::getTimestamps();
+                $data['created_at'] = $timestamps['created_at'];
+                $data['updated_at'] = $timestamps['updated_at'];
 
-            $columns[] = "`created_at`";
-            $columns[] = "`updated_at`";
-            $placeholders[] = "?";
-            $placeholders[] = "?";
-        }
+                $columns[] = "`created_at`";
+                $columns[] = "`updated_at`";
+                $placeholders[] = "?";
+                $placeholders[] = "?";
+            }
 
-        $q1 = implode(', ', $columns);
-        $q2 = implode(', ', $placeholders);
-        $query = "INSERT INTO `{$table}` ({$q1}) VALUES ({$q2})";
-        
-        $stmt = $conn->prepare($query); 
+            $q1 = implode(', ', $columns);
+            $q2 = implode(', ', $placeholders);
+            $query = "INSERT INTO `{$table}` ({$q1}) VALUES ({$q2})";
+            
+            $stmt = $conn->prepare($query); 
 
-        // Execute with bound parameters
-        if (!$stmt->execute(array_values($data))) {
-            $errorInfo = $stmt->errorInfo();
-            Logger::error("SQL Error: {$errorInfo[2]} - Query: {$query} - Data: " . json_encode($data));
+            // Execute with bound parameters
+            if (!$stmt->execute(array_values($data))) {
+                $errorInfo = $stmt->errorInfo();
+                Logger::error("create: SQL Error: {$errorInfo[2]} - Query: {$query} - Data: " . json_encode($data));
+                return null;  
+            }
+
+            return (int) $conn->lastInsertId();
+        } catch (PDOException $e) {
+            Logger::error("create: SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($data));
             return null;  
         }
-
-        return (int) $conn->lastInsertId();
     }
 
     /**
@@ -451,13 +461,13 @@ class DB {
     
             if (!$stmt->execute($params)) {
                 $errorInfo = $stmt->errorInfo();
-                Logger::error("SQL Error: {$errorInfo[2]} - Query: {$query} - Data: " . json_encode($params));
+                Logger::error("update: SQL Error: {$errorInfo[2]} - Query: {$query} - Data: " . json_encode($params));
                 return null;
             }
     
             return $stmt->rowCount(); // Return the number of affected rows
         } catch (PDOException $e) {
-            Logger::error("SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($params));
+            Logger::error("update: SQL Error: {$e->getMessage()} - Query: {$query} - Data: " . json_encode($params));
             return null;
         }
     }
@@ -616,6 +626,18 @@ class DB {
         ];
     }
 
+    /**
+     * Checks if a user is assigned as an editor to a specific post.
+     *
+     * This function retrieves the list of assigned editors for a given post and checks if the specified user
+     * is included in that list. It first calls the `getAssignedEditorByPostId` method to get the editor IDs
+     * associated with the post. If the list of editor IDs is an array, it then checks if the user ID is present
+     * in that array.
+     *
+     * @param int $user_id The ID of the user to check.
+     * @param int $post_id The ID of the post to check.
+     * @return bool Returns true if the user is assigned as an editor to the post, false otherwise.
+     */
     public static function hasAssignedEditor(int $user_id, int $post_id) {
         $assigned_editors = self::getAssignedEditorByPostId($post_id, true, true);
         
@@ -624,6 +646,17 @@ class DB {
         return in_array($user_id, $assigned_editors, true);
     }
 
+    /**
+     * Removes an editor from a post.
+     *
+     * This function removes a specific user (editor) from the list of assigned editors for a given post.
+     * It first retrieves the current list of assigned editors for the post, then removes the specified user
+     * from that list, and finally updates the database with the new list of editors.
+     *
+     * @param int $user_id The ID of the user (editor) to be removed.
+     * @param int $post_id The ID of the post from which the editor should be removed.
+     * @return bool Returns true if the editor was successfully removed and the database was updated, false otherwise.
+     */
     public static function removeEditorFromPost(int $user_id, int $post_id) {
         $assigned_editors = self::getAssignedEditorByPostId($post_id, true, true);
         
@@ -632,5 +665,201 @@ class DB {
 
         return self::updateByColumns(self::LISTING_EDITORS, ['post_id' => $post_id], ['editor_ids' => json_encode($assigned_editors)]);
     }
+
+    /**
+     * Retrieves all leads based on the provided parameters.
+     *
+     * @param int $userId The ID of the user. If 0, retrieves leads for all users.
+     * @param string $keyword The search keyword to filter leads by mobile, email, first name, or last name.
+     * @param int $itemsPerPage The number of leads to retrieve per page. Default is 10.
+     * @param int $page The page number to retrieve. Default is 1.
+     * @return array An array containing the results, total records, items per page, and current page.
+     */
+    public static function getAllLeads(int $userId, string $keyword, int $itemsPerPage = 10, int $page = 1) {
+        try {
+            $table = self::HOUZEZ_CRM_LEADS;
+            $offset = ($page * $itemsPerPage) - $itemsPerPage;
+
+            // Start with a basic query
+            $query = "SELECT * FROM `{$table}`";
+
+            // Add user condition if userId is not zero
+            if ($userId) {
+                $query .= " WHERE user_id = :user_id";
+            }
+
+            // If keyword is present, modify the query to include search condition
+            if (!empty($keyword)) {
+                $keywordCondition = " (mobile LIKE :keyword OR email LIKE :keyword OR first_name LIKE :keyword OR last_name LIKE :keyword)";
+                $query .= ($userId) ? " AND" : " WHERE"; // Check if WHERE needs to be added
+                $query .= $keywordCondition;
+            }
+
+            // Prepare total count query
+            $totalQuery = "SELECT COUNT(*) FROM ({$query}) AS combined_table";
+            $stmt = self::connect()->prepare($totalQuery);
+
+            if ($userId) {
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            }
+
+            if (!empty($keyword)) {
+                $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            $total = $stmt->fetchColumn();
+
+            // Prepare results query with limit and offset
+            $query .= " ORDER BY lead_id DESC LIMIT :offset, :items_per_page";
+            $stmt = self::connect()->prepare($query);
+
+            if ($userId) {
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            }
+
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':items_per_page', $itemsPerPage, PDO::PARAM_INT);
+
+            if (!empty($keyword)) {
+                $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            $returnArray = [
+                'data' => [
+                    'results' => $results,
+                    'total_records' => $total,
+                    'items_per_page' => $itemsPerPage,
+                    'page' => $page,
+                ]
+            ];
+
+            return $returnArray;
+        } catch (PDOException $e) {
+            Logger::error("getAllLeads: SQL Error: {$e->getMessage()} - Query: {$query}", compact('userId', 'keyword', 'itemsPerPage', 'page'));
+            return null;
+        }
+    }
+
+    /**
+     * Retrieve all deals for a specific user and deal group with pagination.
+     *
+     * This method fetches deals from the database based on the provided user ID, deal group,
+     * items per page, and page number. It supports pagination by calculating the offset and
+     * limiting the number of results returned. The results are ordered by the deal ID in
+     * descending order.
+     *
+     * @param int $userId The ID of the user whose deals are to be retrieved. If 0, deals for all users are retrieved.
+     * @param string $dealGroup The group of deals to retrieve (e.g., 'active', 'won', 'lost'). Default is 'active'.
+     * @param int $itemsPerPage The number of deals to retrieve per page. Default is 10.
+     * @param int $page The page number to retrieve. Default is 1.
+     * @return array An associative array containing the results, total records, items per page, and current page.
+     *               The 'data' key contains an array with the following keys:
+     *               - 'results': An array of deal objects.
+     *               - 'total_records': The total number of deals matching the criteria.
+     *               - 'items_per_page': The number of deals per page.
+     *               - 'page': The current page number.
+     * @throws PDOException If there is an error executing the SQL queries.
+     */
+    public static function getAllDeals(int $userId, string $dealGroup = 'active', int $itemsPerPage = 10, int $page = 1) {
+        try {
+            $table = self::HOUZEZ_CRM_DEALS;
+            $offset = ($page * $itemsPerPage) - $itemsPerPage;
+    
+            // Start with a basic query
+            $baseQuery = "FROM `{$table}`";
+            $conditions = [];
+    
+            // Conditionally add user_id condition if userId is not null
+            if ($userId) {
+                $conditions[] = "user_id = :user_id";
+            }
+    
+            // Always apply the deal_group condition
+            $conditions[] = "deal_group = :deal_group";
+    
+            // Combine conditions into the query
+            if (!empty($conditions)) {
+                $baseQuery .= " WHERE " . implode(' AND ', $conditions);
+            }
+    
+            // Prepare total count query (without LIMIT and ORDER BY)
+            $totalQuery = "SELECT COUNT(*) {$baseQuery}";
+            $stmt = self::connect()->prepare($totalQuery);
+    
+            if ($userId) {
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            }
+            $stmt->bindValue(':deal_group', $dealGroup, PDO::PARAM_STR);
+            $stmt->execute();
+            $total = $stmt->fetchColumn();
+    
+            // Prepare results query with ORDER BY and LIMIT
+            $query = "SELECT * {$baseQuery} ORDER BY deal_id DESC LIMIT :offset, :items_per_page";
+            $stmt = self::connect()->prepare($query);
+    
+            if ($userId) {
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            }
+            $stmt->bindValue(':deal_group', $dealGroup, PDO::PARAM_STR);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':items_per_page', $itemsPerPage, PDO::PARAM_INT);
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_OBJ);
+    
+            return [
+                'data' => [
+                    'results' => $results,
+                    'total_records' => $total,
+                    'items_per_page' => $itemsPerPage,
+                    'page' => $page,
+                ]
+            ];
+
+        } catch (PDOException $e) {
+            Logger::error("getAllDeals: SQL Error: {$e->getMessage()} - Query: {$query}", compact('userId', 'dealGroup', 'itemsPerPage', 'page'));
+            return null;
+        }
+    }
+
+    /**
+     * Get the total number of deals by group.
+     *
+     * This method retrieves the total count of deals for a specific deal group.
+     * If a user ID is provided, it will filter the deals by that user ID.
+     *
+     * @param int $userId The ID of the user to filter deals by. If 0, it will not filter by user.
+     * @param string $dealGroup The deal group to filter by (e.g., 'active', 'won', 'lost').
+     * @return int The total number of deals in the specified group.
+     */
+    public static function getTotalDealsByGroup(int $userId, string $dealGroup): int {
+        try {
+            $table = self::HOUZEZ_CRM_DEALS;
+    
+            // Prepare total count query
+            $query = "SELECT COUNT(*) FROM `{$table}` WHERE deal_group = :deal_group";
+            $params = [':deal_group' => $dealGroup];
+    
+            // Conditionally add user_id if provided
+            if ($userId) {
+                $query .= " AND user_id = :user_id";
+                $params[':user_id'] = $userId;
+            }
+    
+            $stmt = self::connect()->prepare($query);
+            foreach ($params as $param => $value) {
+                $stmt->bindValue($param, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+    
+        } catch (PDOException $e) {
+            Logger::error("getTotalDealsByGroup: SQL Error: {$e->getMessage()} - Query: {$query}", compact('userId', 'dealGroup'));
+            return 0;
+        }
+    }    
 }
 ?>

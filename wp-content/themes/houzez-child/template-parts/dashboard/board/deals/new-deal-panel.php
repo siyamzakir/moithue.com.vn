@@ -53,11 +53,16 @@
 				$last_name = get_user_meta($user_id, 'last_name', true);
 				$profile_picture = get_user_meta($user_id, 'profile_picture', true); // Example custom field
 
+				$name = "{$first_name} {$last_name}";
+				if(empty(trim($name))) {
+					$name = wp_get_current_user()->display_name;
+				}
+
 				echo "
 					<div class='form-group'>
 						<label for='deal_agent'>Agent <sub class='text-success px-1'>(you)</sub></label>
 						<input name='deal_agent' hidden type='text' value='{$user_id}' readonly>
-						<input class='form-control' type='text' value='{$first_name} {$last_name}' readonly>
+						<input class='form-control' type='text' value='{$name}' readonly>
 					</div>
 				";
 				
