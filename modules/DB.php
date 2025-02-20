@@ -861,5 +861,80 @@ class DB {
             return 0;
         }
     }    
+
+    public static function getAllInquiries(int $userId, string $keyword, int $leadId = 0, int $itemsPerPage = 10, int $page = 1) {
+        try {
+            $table = self::HOUZEZ_CRM_ENQUIRIES;
+            $offset = ($page - 1) * $itemsPerPage;
+            $params = [];
+            
+            // Start with a base query
+            $query = "SELECT * FROM `{$table}` WHERE 1=1";
+            $countQuery = "SELECT COUNT(*) FROM `{$table}` WHERE 1=1";
+    
+            // Add user filter only if $userId is set
+            if (!$userId) {
+                $query .= " AND user_id = :user_id";
+                $countQuery .= " AND user_id = :user_id";
+                $params[':user_id'] = $userId;
+            }
+    
+            // Add conditions for lead_id and keyword dynamically
+            if ($leadId > 0) {
+                $query .= " AND lead_id = :lead_id";
+                $countQuery .= " AND lead_id = :lead_id";
+                $params[':lead_id'] = $leadId;
+            }
+    
+            if (!empty($keyword)) {
+                $query .= " AND enquiry_type LIKE :keyword";
+                $countQuery .= " AND enquiry_type LIKE :keyword";
+                $params[':keyword'] = "%$keyword%";
+            }
+    
+            // Add ordering and pagination
+            $query .= " ORDER BY enquiry_id DESC LIMIT :offset, :items_per_page";
+            $params[':offset'] = $offset;
+            $params[':items_per_page'] = $itemsPerPage;
+    
+            // Execute main query
+            $stmt = self::connect()->prepare($query);
+            foreach ($params as $param => $value) {
+                $stmt->bindValue($param, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_OBJ);
+    
+            // Execute count query for total records
+            $countStmt = self::connect()->prepare($countQuery);
+
+            foreach ($params as $param => $value) {
+                if (!in_array($param, [':offset', ':items_per_page'])) {
+                    $countStmt->bindValue($param, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+                }
+            }
+
+            $countStmt->execute();
+            $total = (int) $countStmt->fetchColumn();
+    
+            // Logger::info("getAllInquiries: Total records: {$total}", compact('userId', 'keyword', 'leadId', 'itemsPerPage', 'page', 'query'));
+            // Return structured response
+            return [
+                'data' => [
+                    'results' => $results,
+                    'total_records' => $total,
+                    'items_per_page' => $itemsPerPage,
+                    'page' => $page,
+                ],
+            ];
+    
+        } catch (PDOException $e) {
+            Logger::error("getAllInquiries: SQL Error: {$e->getMessage()} - Query: {$query}", compact('userId', 'keyword', 'leadId', 'itemsPerPage', 'page'));
+            return null;
+        }
+    }
+    
+    
 }
 ?>
