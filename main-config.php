@@ -5,7 +5,7 @@
  * when PRODUCTION is true, the database configuration is different
  * use first index for localhost and second index for production server
 */
-const PRODUCTION = true;
+const PRODUCTION = false;
 
 /** 
  * Database configuration

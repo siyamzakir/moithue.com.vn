@@ -53,7 +53,8 @@ if(!empty($all_enquires['data']['results'])) {
         <?php 
         foreach ($all_enquires['data']['results'] as $enquiry) { 
 
-            $lead = Houzez_Leads::get_lead($enquiry->lead_id);
+            // $lead = Houzez_Leads::get_lead($enquiry->lead_id);
+            $lead = DB::findByColumns(DB::HOUZEZ_CRM_LEADS, ['lead_id' => $enquiry->lead_id], ['lead_id', 'display_name'], 'oldest');
             $meta = maybe_unserialize($enquiry->enquiry_meta);
 
             $detail_enquiry = add_query_arg(
@@ -79,12 +80,9 @@ if(!empty($all_enquires['data']['results'])) {
             </td>
 
             <?php if($is_not_lead_detail) { ?>
-            <td data-label="<?php esc_html_e('Contact', 'houzez'); ?>">
-                <?php 
-                if(isset($lead->display_name)) {
-                    echo esc_attr($lead->display_name); 
-                }?>
-            </td>
+                <td data-label="<?php esc_html_e('Contact', 'houzez'); ?>">
+                    <?php if(is_array($lead) && isset($lead['display_name'])) { echo esc_attr($lead['display_name']); } ?>
+                </td>
             <?php } ?>
 
             <td data-label="<?php esc_html_e('Inquiry Type', 'houzez'); ?>">
