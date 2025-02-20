@@ -873,7 +873,7 @@ class DB {
             $countQuery = "SELECT COUNT(*) FROM `{$table}` WHERE 1=1";
     
             // Add user filter only if $userId is set
-            if (!$userId) {
+            if ($userId) {
                 $query .= " AND user_id = :user_id";
                 $countQuery .= " AND user_id = :user_id";
                 $params[':user_id'] = $userId;
