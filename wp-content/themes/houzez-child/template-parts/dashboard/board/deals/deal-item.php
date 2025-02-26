@@ -20,20 +20,14 @@ $next_action = $deal_data->next_action;
 $agent_id = $deal_data->agent_id;
 $agent_name = get_the_title($agent_id);
 
-$lead = Houzez_Leads::get_lead($deal_data->lead_id);
+$display_name = $deal_data->lead_display_name;
+$lead_mobile = $deal_data->lead_mobile;
+$lead_email = $deal_data->lead_email;
 
-if(!empty($lead) ) {
-	$display_name = $lead->display_name;
-	$lead_mobile = $lead->mobile;
-	$lead_email = $lead->email;
-
-	if(empty($display_name)) {
-		$display_name = $lead->first_name.' '.$lead->last_name;
-	}
+if(empty($display_name)) {
+	$display_name = "{$deal_data->lead_first_name} {$deal_data->lead_last_name}";
 }
 
-// Get the property details
-$property = DB::findByColumns(DB::POSTS, ['ID' => $deal_data->listing_id], ['ID', 'post_title', 'post_name']);
 ?>
 <tr data-id="<?php echo intval($deal_data->deal_id); ?>">
 	<td class="table-nowrap" data-label="<?php esc_html_e('Title', 'houzez'); ?>">
@@ -48,13 +42,11 @@ $property = DB::findByColumns(DB::POSTS, ['ID' => $deal_data->listing_id], ['ID'
 
 	<td class="table-nowrap" data-label="<?php esc_html_e('Property', 'houzez'); ?>">
 		<?php 
-			if($property){
-				$post_title = isset($property['post_title']) ? $property['post_title'] : '';
-				$post_name = isset($property['post_name']) ? $property['post_name'] : '';
-				$property_link = rtrim(WP_HOME, '/') . "/property/" . ltrim($post_name, '/');
+			if(isset($deal_data->property_title) && isset($deal_data->property_slug)){
+				$property_link = rtrim(WP_HOME, '/') . "/property/" . ltrim($deal_data->property_slug, '/');
 
 				// cut the post title to first 20 chars if it length is more than 20 and also add ...
-				$title = strlen($post_title) > 20 ? substr($post_title, 0, 20) . '...' : $post_title;
+				$title = strlen($deal_data->property_title) > 20 ? substr($deal_data->property_title, 0, 20) . '...' : $deal_data->property_title;
 				echo "<a href='{$property_link}' class='property-link'>{$title}</a>";
 			} else {
 				echo "<i>No Property Selected.</i>";
@@ -77,32 +69,10 @@ $property = DB::findByColumns(DB::POSTS, ['ID' => $deal_data->listing_id], ['ID'
 	<?php } ?>
 
 	<td class="table-nowrap" data-label="<?php esc_html_e('Status', 'houzez'); ?>">
-		<select class="selectpicker deal_status form-control bs-select-hidden deals-status" title="<?php esc_html_e('Select', 'houzez'); ?>">
-			<?php
-			$status_settings = hcrm_get_option('status', 'hcrm_deals_settings', esc_html__('New Lead, Meeting Scheduled, Qualified, Proposal Sent, Called, Negotiation, Email Sent', 'houzez'));
-			if(!empty($status_settings)) {
-
-				$status_array = explode(',', $status_settings);
-				foreach( $status_array as $status_name ) {
-					echo '<option '.selected($status, trim($status_name), false).' value="'.trim($status_name).'">'.esc_attr($status_name).'</value>';
-				}
-			}
-			?>
-		</select>
+		<?= Section::dealStatusSelector($status, 'deal_status'); ?>
 	</td>
 	<td class="table-nowrap" data-label="<?php esc_html_e('Next Action', 'houzez'); ?>">
-		<select class="selectpicker deal_next_action form-control bs-select-hidden" title="<?php esc_html_e('Select', 'houzez'); ?>">
-			<?php
-			$next_action_settings = hcrm_get_option('next_action', 'hcrm_deals_settings', esc_html__('Qualification, Demo, Call, Send a Proposal, Send an Email, Follow Up, Meeting', 'houzez'));
-			if(!empty($next_action_settings)) {
-
-				$next_action_array = explode(',', $next_action_settings);
-				foreach( $next_action_array as $action_name ) {
-					echo '<option '.selected($next_action, trim($action_name), false).' value="'.trim($action_name).'">'.esc_attr($action_name).'</value>';
-				}
-			}
-			?>
-		</select>
+		<?= Section::nextActionSelector($next_action, 'deal_next_action'); ?>
 	</td>
 	<td class="table-nowrap" data-label="<?php esc_html_e('Action Due Date', 'houzez'); ?>">
 		<input type="text" class="form-control deal_action_due" value="<?php echo esc_attr($action_due_date); ?>" placeholder="<?php esc_html_e('Select a Date', 'houzez'); ?>" readonly>

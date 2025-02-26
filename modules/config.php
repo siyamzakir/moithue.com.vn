@@ -2,6 +2,69 @@
 require_once __DIR__ . '/../main-config.php';
 require_once __DIR__ . '/DB.php';
 
+// test raw query
+// echo "Write here your raw SQL query as string: ";
+// $raw_sql = trim(fgets(STDIN));
+// $start = microtime(true);
+// $data = DB::executeRawQuery($raw_sql);
+// $end = microtime(true);
+
+// echo PHP_EOL . 
+//     json_encode($data, JSON_PRETTY_PRINT) . PHP_EOL .
+//     "Start: " . $start . PHP_EOL .
+//     "End: " . $end . PHP_EOL .
+//     "Time taken: " . round(($end - $start) * 1000, 3) . " ms" . PHP_EOL .
+//     PHP_EOL;
+// exit;
+
+function echoDealsData(){
+    // test getDeals
+    echo "Please enter a user id: ";
+    $user_id = intval(trim(fgets(STDIN)));
+    echo "\nFilter by property id: ";
+    $property_id = intval(trim(fgets(STDIN)));
+    echo "\nFilter by lead id: ";
+    $lead_id = intval(trim(fgets(STDIN)));
+    echo "\nFilter by agent id: ";
+    $agent_id = intval(trim(fgets(STDIN)));
+    echo "\nFilter by deal title: ";
+    $deal_title = trim(fgets(STDIN));
+    echo "\nFilter by next action: ";   
+    $next_action = trim(fgets(STDIN));
+    echo "\nFilter by due date: ";
+    $due_date = trim(fgets(STDIN));
+    echo "\nFilter by deal group: ";
+    $deal_group = trim(fgets(STDIN));
+    echo "\nFilter by status: ";
+    $status = trim(fgets(STDIN));
+    echo "\nFilter by lead mobile: ";
+    $lead_mobile = trim(fgets(STDIN));
+    echo "\nFilter by lead email: ";
+    $lead_email = trim(fgets(STDIN));
+
+    $start = microtime(true);
+    $data = DB::getDeals($user_id, [
+        'deal_group' => $deal_group,
+        'property_id' => $property_id,
+        'lead_id' => $lead_id,
+        'agent_id' => $agent_id,
+        'deal_title' => $deal_title,
+        'next_action' => $next_action,
+        'due_date' => $due_date,
+        'status' => $status,
+        'lead_mobile' => $lead_mobile,
+        'lead_email' => $lead_email,
+    ]);
+    $end = microtime(true);
+
+    echo PHP_EOL . 
+        json_encode($data, JSON_PRETTY_PRINT) . PHP_EOL .
+        "Start: " . $start . PHP_EOL .
+        "End: " . $end . PHP_EOL .
+        "Time taken: " . round(($end - $start) * 1000, 3) . " ms" . PHP_EOL .
+        PHP_EOL;
+}
+
 /**
  * @descriptions all edited files
  *  modified:   .htaccess

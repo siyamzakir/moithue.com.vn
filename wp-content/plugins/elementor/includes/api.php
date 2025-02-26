@@ -169,10 +169,10 @@ class Api {
 		return $data['canary_deployment'];
 	}
 
-	public static function get_promotion_widgets() {
+	public static function get_promotion_widgets() {		
 		$data = self::get_info_data();
 
-		if ( ! isset( $data['pro_widgets'] ) ) {
+		if (!isset($data['pro_widgets'])) {
 			$data['pro_widgets'] = [];
 		}
 
@@ -286,7 +286,7 @@ class Api {
 	 * @return array The response of the request.
 	 */
 	public static function send_feedback( $feedback_key, $feedback_text ) {
-		return wp_remote_post( self::$api_feedback_url, [
+		return wp_remote_post(self::$api_feedback_url, array(
 			'timeout' => 30,
 			'body' => [
 				'api_version' => ELEMENTOR_VERSION,
@@ -294,7 +294,7 @@ class Api {
 				'feedback_key' => $feedback_key,
 				'feedback' => $feedback_text,
 			],
-		] );
+		));
 	}
 
 	/**

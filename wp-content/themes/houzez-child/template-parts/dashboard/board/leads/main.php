@@ -9,6 +9,8 @@
  * Start From Now
  */
 
+global $dashboard_crm, $hpage, $name, $phone, $date, $referrer;
+
 // handle message from response
 $response = ['type' => '', 'message' => ''];
 $page_root_uri = explode('?', $_SERVER['REQUEST_URI'])[0];
@@ -35,13 +37,19 @@ if(isset($_GET['type']) && $_GET['type'] == 'lock_status') {
 $has_permission = houzez_is_admin() || DB::DEALS_LEADS_MANAGE_BY_SELF;
 $user_id = $has_permission ? 0 : get_current_user_id();
 
-$items_per_page = filter_input(INPUT_GET, 'records', FILTER_VALIDATE_INT, ['options' => ['default' => 10, 'min_range' => 1]]);
-$page = filter_input(INPUT_GET, 'cpage', FILTER_VALIDATE_INT, ['options' => ['default' => 1, 'min_range' => 1]]);
-$keyword = sanitize_text_field(trim(filter_input(INPUT_GET, 'keyword', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
 $hpage = filter_input(INPUT_GET, 'hpage', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: '';
+$keyword = sanitize_text_field(trim(filter_input(INPUT_GET, 'keyword', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
+$page = filter_input(INPUT_GET, 'cpage', FILTER_VALIDATE_INT, ['options' => ['default' => 1, 'min_range' => 1]]);
+$items_per_page = filter_input(INPUT_GET, 'records', FILTER_VALIDATE_INT, ['options' => ['default' => 10, 'min_range' => 1]]);
+
+// Get and sanitize filter parameters
+$name = filter_input(INPUT_GET, 'lead_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: '';
+$phone = filter_input(INPUT_GET, 'phone', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: '';
+$date = filter_input(INPUT_GET, 'date', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: '';
+$referrer = filter_input(INPUT_GET, 'referrer', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?: '';
 
 // get all leads
-$leads = DB::getAllLeads($user_id, $keyword, $items_per_page, $page);
+$leads = DB::getLeads($user_id, compact('keyword','name', 'phone', 'date', 'referrer'), $items_per_page, $page);
 
 /**
  * End Handle Lock Status
@@ -63,7 +71,12 @@ $import_link = add_query_arg( 'hpage', 'import-leads', $dashboard_crm );
             
             <!-- dashboard-header-left  -->
             <div class="dashboard-header-right">
-                <a class="btn btn-primary open-close-slide-panel" href="#"><?php esc_html_e('Add New Lead', 'houzez'); ?></a>
+                <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#leadsFilterModal">
+                    <i class="houzez-icon icon-search mr-1"></i> <?php esc_html_e('Filter Leads', 'houzez'); ?>
+                </button>
+                <button class="btn btn-primary open-close-slide-panel ml-3">
+                    <?php esc_html_e('Add New Lead', 'houzez'); ?>
+                </button>
             </div>
             <!-- dashboard-header-right -->
         </div>
@@ -81,7 +94,12 @@ $import_link = add_query_arg( 'hpage', 'import-leads', $dashboard_crm );
             </div>
         <?php } ?>
     </div>
+
+    <!-- Leads Filtering -->
 </header>
+
+<!-- Leads Filter Form -->
+<?php get_template_part('template-parts/dashboard/board/leads/leads-filters'); ?>
 
 <!-- Check if exists leads -->
 <?php if($leads && !empty($leads)): ?>

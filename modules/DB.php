@@ -62,11 +62,7 @@ trait MigrationsTrait {
     } 
 }
 
-class DB {
-    use MigrationsTrait;
-
-    private $pdo;
-
+trait DBConstantVars {
     public const COMMENT_META = 'wp_commentmeta';
     public const COMMENTS = 'wp_comments';
     public const E_EVENTS = 'wp_e_events';
@@ -108,10 +104,10 @@ class DB {
     public const MAIN_ADMINISTRATOR_ID = null;
     public const LISTING_SELF_APPROVED = false;
     public const DEALS_LEADS_MANAGE_BY_SELF = false;
+}
 
-    public function __construct() {
-        $this->pdo = self::connect();
-    }
+class DB {
+    use MigrationsTrait, OlderDB, DBConstantVars;
 
     /**
      * Retrieves a list of all tables in the database.
@@ -338,13 +334,27 @@ class DB {
     }
 
     /**
-    * Update data by columns
-    * @param string $table
-    * @param array $columns
-    * @param array $data
-    * @param bool $timestamps
-    * @return int|false
-    */
+     * Updates records in a table based on column conditions.
+     * 
+     * This function updates records in the specified table where the given column conditions match.
+     * It supports automatic timestamp updates and handles SQL errors gracefully.
+     *
+     * @param string $table The name of the table to update
+     * @param array $columns Associative array of column conditions to match in WHERE clause
+     *                      Example: ['user_id' => 5, 'status' => 'active']
+     * @param array $data Associative array of column-value pairs to update
+     *                   Example: ['name' => 'John', 'email' => 'john@example.com'] 
+     * @param bool $timestamps Whether to automatically update the updated_at timestamp (default true)
+     * 
+     * @return int|false Returns number of affected rows on success, false on failure
+     *                   Note: Returns 0 if no rows were updated (conditions didn't match any records)
+     * 
+     * @throws PDOException on database errors, which are caught and logged
+     * 
+     * Example usage:
+     * updateByColumns('users', ['id' => 5], ['name' => 'John', 'active' => 1]);
+     * // UPDATE `users` SET `name` = 'John', `active` = 1, `updated_at` = NOW() WHERE `id` = 5
+     */
     public static function updateByColumns(string $table, array $columns, array $data, bool $timestamps = true) {
         try {
             if ($timestamps) {
@@ -375,12 +385,26 @@ class DB {
     }
 
     /**
-    * Create data
-    * @param string $table
-    * @param array $data
-    * @param bool $timestamps
-    * @return int|false
-    */
+     * Creates a new record in the specified database table.
+     * 
+     * This function inserts a new record into the given table with the provided data.
+     * It supports automatic timestamp creation and handles SQL errors gracefully.
+     *
+     * @param string $table The name of the table to insert into
+     * @param array $data Associative array of column-value pairs to insert
+     *                   Example: ['name' => 'John', 'email' => 'john@example.com']
+     * @param bool $timestamps Whether to automatically add created_at and updated_at timestamps (default true)
+     * 
+     * @return int|null Returns the ID of the newly inserted record on success, null on failure
+     *                  Note: Returns null if data array is empty or if insert fails
+     * 
+     * @throws PDOException on database errors, which are caught and logged
+     * 
+     * Example usage:
+     * create('users', ['name' => 'John', 'email' => 'john@example.com']);
+     * // INSERT INTO `users` (`name`, `email`, `created_at`, `updated_at`) 
+     * // VALUES ('John', 'john@example.com', '2023-01-01 00:00:00', '2023-01-01 00:00:00')
+     */
     public static function create(string $table, array $data, bool $timestamps = true): ?int {
         try {
             if (empty($data)) {
@@ -667,15 +691,239 @@ class DB {
     }
 
     /**
-     * Retrieves all leads based on the provided parameters.
-     *
-     * @param int $userId The ID of the user. If 0, retrieves leads for all users.
-     * @param string $keyword The search keyword to filter leads by mobile, email, first name, or last name.
-     * @param int $itemsPerPage The number of leads to retrieve per page. Default is 10.
-     * @param int $page The page number to retrieve. Default is 1.
-     * @return array An array containing the results, total records, items per page, and current page.
+     * Get deals with filtering, pagination and related data from leads and properties
+     * 
+     * @param int    $userId       User ID to filter deals by. If 0, returns all deals
+     * @param array  $filters      Array of filter options:
+     *                            - property_id (int): Filter by property/listing ID
+     *                            - lead_id (int): Filter by lead ID
+     *                            - agent_id (int): Filter by agent ID
+     *                            - deal_title (string): Search deals by title
+     *                            - next_action (string): Filter by next action
+     *                            - due_date (string): Filter by due date (YYYY-MM-DD format)
+     *                            - deal_group (string): Filter by deal group ('active'|'won'|'lost')
+     *                            - lead_email (string): Filter by lead's email
+     *                            - lead_mobile (string): Filter by lead's mobile number
+     *                            - status (string): Filter by deal status (e.g. 'New Lead', 'Meeting Scheduled', etc)
+     * @param int    $itemsPerPage Number of items to return per page
+     * @param int    $currentPage  Current page number
+     * 
+     * @return array|null Returns array containing:
+     *                    - results: Array of deal objects with joined lead and property data
+     *                    - total_records: Total number of deals matching filters
+     *                    - items_per_page: Number of items per page
+     *                    - page: Current page number
+     *                    - totals: Count of deals by deal_group (active/won/lost)
+     *                    Returns null on error
      */
-    public static function getAllLeads(int $userId, string $keyword, int $itemsPerPage = 10, int $page = 1) {
+    public static function getDeals(
+        int $userId = 0,
+        array $filters = [
+            'property_id' => 0,
+            'lead_id' => 0,
+            'agent_id' => 0,
+            'deal_title' => '',
+            'next_action' => '',
+            'due_date' => '',
+            'deal_group'=> '',
+            'lead_email'=> '',
+            'lead_mobile'=> '',
+            'status'=> '',
+        ], 
+        $itemsPerPage = 10,
+        $currentPage = 1, 
+    ) {
+        // Calculate offset based on current page and items per page
+        $offset = ($currentPage - 1) * $itemsPerPage;
+        
+        // Get deal IDs that this user can access as an editor
+        $inIDs = self::getDealIdsByAssignedPostEditors($userId);
+
+        // Define table names
+        $table = self::HOUZEZ_CRM_DEALS;
+        $leadsTable = self::HOUZEZ_CRM_LEADS;
+        $postsTable = self::POSTS;
+        
+        // Build main query joining deals, leads and posts tables
+        $query = "SELECT d.*, 
+                l.lead_id AS lead_id,
+                l.first_name AS lead_first_name,
+                l.last_name AS lead_last_name, 
+                l.email AS lead_email,
+                l.mobile AS lead_mobile,
+                l.display_name AS lead_display_name,
+                p.post_title AS property_title,
+                p.post_name AS property_slug 
+            FROM `{$table}` AS d 
+            LEFT JOIN `{$leadsTable}` AS l ON d.lead_id = l.lead_id 
+            LEFT JOIN `{$postsTable}` AS p ON d.listing_id = p.ID";
+        
+        // Build count query to get totals by deal group
+        $countQuery = "SELECT 
+            COUNT(CASE WHEN deal_group = 'active' THEN 1 END) AS active,
+            COUNT(CASE WHEN deal_group = 'lost' THEN 1 END) AS lost,
+            COUNT(CASE WHEN deal_group = 'won' THEN 1 END) AS won
+        FROM `{$table}` AS d 
+        LEFT JOIN `{$leadsTable}` AS l ON d.lead_id = l.lead_id";
+
+        // Add user filter condition
+        if($userId) {
+            $query .= " WHERE d.user_id = :user_id ";
+            $countQuery .= " WHERE d.user_id = :user_id ";
+        } else {
+            $query .= " WHERE 0 = :user_id ";
+            $countQuery .= " WHERE 0 = :user_id ";
+        }
+
+        // Initialize arrays for conditions and parameters
+        $conditions = [];
+        $parameters = [':offset' => $offset, ':items_per_page' => $itemsPerPage, ':user_id' => $userId];
+
+        // Add condition for assigned editor IDs if any exist
+        if(!empty($inIDs)) {
+            $ids = implode(',', $inIDs);
+            $conditions[] = "OR d.deal_id IN ({$ids}) ";
+        }
+
+        // Add filter conditions based on provided filters
+        if (isset($filters['property_id']) && $filters['property_id']) {
+            $conditions[] = "AND d.listing_id = :property_id";
+            $parameters[':property_id'] = $filters['property_id'];
+        }
+        if (isset($filters['lead_id']) && $filters['lead_id']) {
+            $conditions[] = "AND d.lead_id = :lead_id";
+            $parameters[':lead_id'] = $filters['lead_id'];
+        }
+        if (isset($filters['agent_id']) && $filters['agent_id']) {
+            $conditions[] = "AND d.agent_id = :agent_id";
+            $parameters[':agent_id'] = $filters['agent_id'];
+        }
+        if (isset($filters['deal_title']) && $filters['deal_title']) {
+            $conditions[] = "AND d.title LIKE CONCAT('%', :deal_title, '%')";
+            $parameters[':deal_title'] = $filters['deal_title'];
+        }
+        if (isset($filters['next_action']) && $filters['next_action']) {
+            $conditions[] = "AND d.next_action LIKE CONCAT('%', :next_action, '%')";
+            $parameters[':next_action'] = $filters['next_action'];
+        }
+        if (isset($filters['due_date']) && $filters['due_date']) {
+            $conditions[] = "AND d.action_due_date = :due_date";
+            $parameters[':due_date'] = $filters['due_date'];
+        }
+        if (isset($filters['status']) && $filters['status']) {
+            $conditions[] = "AND d.status LIKE CONCAT('%', :status, '%')";
+            $parameters[':status'] = $filters['status'];
+        }
+        if(isset($filters['lead_email']) && $filters['lead_email']) {
+            $conditions[] = "AND l.email LIKE CONCAT('%', :lead_email, '%')";
+            $parameters[':lead_email'] = $filters['lead_email'];
+        }
+        if(isset($filters['lead_mobile']) && $filters['lead_mobile']) {
+            $conditions[] = "AND l.mobile LIKE CONCAT('%', :lead_mobile, '%')";
+            $parameters[':lead_mobile'] = $filters['lead_mobile'];
+        }
+
+        // Combine all conditions
+        $q1 = implode(' ', $conditions);
+        $countQuery .= "{$q1}";
+
+        // Add deal group filter and pagination if specified
+        if(isset($filters['deal_group']) && $filters['deal_group']) {
+            $query .= "{$q1} AND d.deal_group = :deal_group ORDER BY d.deal_id DESC LIMIT :offset, :items_per_page";
+            $parameters[':deal_group'] = $filters['deal_group'];
+        } else {
+            $query .= "{$q1} ORDER BY d.deal_id DESC LIMIT :offset, :items_per_page";
+        }
+        
+        try {
+            // Get database connection
+            $connect = self::connect();
+
+            // Prepare statements
+            $groupCountStmt = $connect->prepare($countQuery);
+            $stmt = $connect->prepare($query);
+            
+            // Parameters to exclude from count query
+            $ignoreParamsInCountQuery = [':offset', ':items_per_page', ':deal_group'];
+
+            // Bind parameters to both queries
+            foreach ($parameters as $key => $value) {
+                $param = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
+                
+                $stmt->bindValue($key, $value, $param);
+                $d = compact('key', 'value', 'param'); 
+
+                if (!in_array($key, $ignoreParamsInCountQuery)) {
+                    $groupCountStmt->bindValue($key, $value, $param);
+                }
+            }
+            
+            // Execute queries
+            $stmt->execute();
+            $groupCountStmt->execute();
+            
+            // Get results
+            $groupCounts = $groupCountStmt->fetch(PDO::FETCH_ASSOC);
+            $results = $stmt->fetchAll(PDO::FETCH_OBJ); 
+
+            // Count total records
+            $total = $stmt->rowCount();
+
+            // Return formatted response
+            return [
+                'data' => [
+                    'results' => $results,
+                    'total_records' => $total,
+                    'items_per_page' => $itemsPerPage,
+                    'page' => $currentPage,
+                ],
+                'group_counts'=> $groupCounts,
+                'filtered_by' => $filters,
+                'deal_ids_from_assigned_editors' => $inIDs,
+                'message' => 'Deals retrieved successfully', 
+            ];
+            
+        } catch (PDOException $e) {
+            // Log error and return null on failure
+            $DB = [
+                'MAIN_QUERY' => $query,
+                'COUNT_QUERY' => $countQuery,
+                'CONDITIONS' => $conditions,
+                'PARAMETERS' => $parameters,
+            ];
+            Logger::error(
+                "getDeals: SQL Error: {$e->getMessage()} - Query:\n\t {$query}\n\n", 
+                compact('userId', 'filters', 'inIDs', 'conditions', 'parameters', 'query', 'countQuery', 'DB')
+            );
+            return null;
+        }
+    }
+
+    /**
+     * Retrieve leads with filtering and pagination support.
+     * 
+     * @param int $userId The ID of the user whose leads are to be retrieved. If 0, retrieves all leads.
+     * @param array $filters Array of filter parameters:
+     *      - keyword (string): Search across display_name, mobile, email, first_name, last_name fields
+     *      - name (string): Filter by display_name field
+     *      - phone (string): Filter by mobile, home_phone or work_phone fields
+     *      - date (string): Filter by exact date in time field
+     *      - referrer (string): Filter by source field
+     * @param int $itemsPerPage Number of leads to return per page
+     * @param int $page Current page number
+     * @return array|null Returns array of leads with pagination data or null on failure
+     */
+    public static function getLeads(
+        int $userId, 
+        array $filters = [
+            'keyword' => '',
+            'name' => '',
+            'phone' => '',
+            'date' => '',
+            'referrer' => '',
+        ], 
+        int $itemsPerPage = 10, 
+        int $page = 1) {
         try {
             $table = self::HOUZEZ_CRM_LEADS;
             $offset = ($page * $itemsPerPage) - $itemsPerPage;
@@ -686,43 +934,40 @@ class DB {
             // Add user condition if userId is not zero
             if ($userId) {
                 $query .= " WHERE user_id = :user_id";
+            } else {
+                $query .= " WHERE 0 = :user_id";
             }
+
+            $parameters = [':user_id' => $userId, ':offset' => $offset, ':items_per_page' => $itemsPerPage];
 
             // If keyword is present, modify the query to include search condition
-            if (!empty($keyword)) {
-                $keywordCondition = " (mobile LIKE :keyword OR email LIKE :keyword OR first_name LIKE :keyword OR last_name LIKE :keyword)";
-                $query .= ($userId) ? " AND" : " WHERE"; // Check if WHERE needs to be added
-                $query .= $keywordCondition;
+            if (isset($filters['keyword']) && !empty($filters['keyword'])) {
+                $query .= " AND (display_name LIKE :keyword OR mobile LIKE :keyword OR email LIKE :keyword OR first_name LIKE :keyword OR last_name LIKE :keyword)";
+                $parameters[':keyword'] = "%{$filters['keyword']}%";
             }
-
-            // Prepare total count query
-            $totalQuery = "SELECT COUNT(*) FROM ({$query}) AS combined_table";
-            $stmt = self::connect()->prepare($totalQuery);
-
-            if ($userId) {
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            if (isset($filters['name']) && !empty($filters['name'])) {
+                $query .= " AND (display_name LIKE :name)";
+                $parameters[':name'] = "%{$filters['name']}%"; 
             }
-
-            if (!empty($keyword)) {
-                $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+            if(isset($filters['phone']) && !empty($filters['phone'])) {
+                $query .= " AND (mobile LIKE :phone OR home_phone LIKE :phone OR work_phone LIKE :phone)";
+                $parameters[':phone'] = "%{$filters['phone']}%";
             }
-
-            $stmt->execute();
-            $total = $stmt->fetchColumn();
+            if(isset($filters['referrer']) && !empty($filters['referrer'])) {
+                $query .= " AND (source LIKE :referrer)";
+                $parameters[':referrer'] = "%{$filters['referrer']}%";
+            }
+            if(isset($filters['date']) && !empty($filters['date'])) {
+                $query .= " AND time = :date";
+                $parameters[':date'] = $filters['date'];
+            }
 
             // Prepare results query with limit and offset
             $query .= " ORDER BY lead_id DESC LIMIT :offset, :items_per_page";
             $stmt = self::connect()->prepare($query);
-
-            if ($userId) {
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-            }
-
-            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-            $stmt->bindValue(':items_per_page', $itemsPerPage, PDO::PARAM_INT);
-
-            if (!empty($keyword)) {
-                $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+            
+            foreach ($parameters as $key => $value) {
+                $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
             }
 
             $stmt->execute();
@@ -731,7 +976,7 @@ class DB {
             $returnArray = [
                 'data' => [
                     'results' => $results,
-                    'total_records' => $total,
+                    'total_records' => $stmt->rowCount(),
                     'items_per_page' => $itemsPerPage,
                     'page' => $page,
                 ]
@@ -745,83 +990,37 @@ class DB {
     }
 
     /**
-     * Retrieve all deals for a specific user and deal group with pagination.
+     * Retrieves deal IDs associated with posts that a specific editor is assigned to.
      *
-     * This method fetches deals from the database based on the provided user ID, deal group,
-     * items per page, and page number. It supports pagination by calculating the offset and
-     * limiting the number of results returned. The results are ordered by the deal ID in
-     * descending order.
+     * This method performs the following steps:
+     * 1. Gets all post IDs that the given editor user is assigned to
+     * 2. Uses those post IDs to find corresponding deals in the CRM deals table
+     * 3. Returns an array of deal IDs that match the editor's assigned posts
      *
-     * @param int $userId The ID of the user whose deals are to be retrieved. If 0, deals for all users are retrieved.
-     * @param string $dealGroup The group of deals to retrieve (e.g., 'active', 'won', 'lost'). Default is 'active'.
-     * @param int $itemsPerPage The number of deals to retrieve per page. Default is 10.
-     * @param int $page The page number to retrieve. Default is 1.
-     * @return array An associative array containing the results, total records, items per page, and current page.
-     *               The 'data' key contains an array with the following keys:
-     *               - 'results': An array of deal objects.
-     *               - 'total_records': The total number of deals matching the criteria.
-     *               - 'items_per_page': The number of deals per page.
-     *               - 'page': The current page number.
-     * @throws PDOException If there is an error executing the SQL queries.
+     * @param int $userId The ID of the editor user to check assignments for
+     * @return array An array of deal IDs that correspond to the editor's assigned posts.
+     *               Returns empty array if no matches found or on error.
+     *
+     * @throws PDOException If there is an error executing the database query
+     * @uses DB::getPostIdsByEditorId() To get posts assigned to the editor
+     * @uses Logger::error() To log any database errors that occur
      */
-    public static function getAllDeals(int $userId, string $dealGroup = 'active', int $itemsPerPage = 10, int $page = 1) {
-        try {
-            $table = self::HOUZEZ_CRM_DEALS;
-            $offset = ($page * $itemsPerPage) - $itemsPerPage;
-    
-            // Start with a basic query
-            $baseQuery = "FROM `{$table}`";
-            $conditions = [];
-    
-            // Conditionally add user_id condition if userId is not null
-            if ($userId) {
-                $conditions[] = "user_id = :user_id";
-            }
-    
-            // Always apply the deal_group condition
-            $conditions[] = "deal_group = :deal_group";
-    
-            // Combine conditions into the query
-            if (!empty($conditions)) {
-                $baseQuery .= " WHERE " . implode(' AND ', $conditions);
-            }
-    
-            // Prepare total count query (without LIMIT and ORDER BY)
-            $totalQuery = "SELECT COUNT(*) {$baseQuery}";
-            $stmt = self::connect()->prepare($totalQuery);
-    
-            if ($userId) {
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-            }
-            $stmt->bindValue(':deal_group', $dealGroup, PDO::PARAM_STR);
-            $stmt->execute();
-            $total = $stmt->fetchColumn();
-    
-            // Prepare results query with ORDER BY and LIMIT
-            $query = "SELECT * {$baseQuery} ORDER BY deal_id DESC LIMIT :offset, :items_per_page";
-            $stmt = self::connect()->prepare($query);
-    
-            if ($userId) {
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-            }
-            $stmt->bindValue(':deal_group', $dealGroup, PDO::PARAM_STR);
-            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-            $stmt->bindValue(':items_per_page', $itemsPerPage, PDO::PARAM_INT);
-            $stmt->execute();
-            $results = $stmt->fetchAll(PDO::FETCH_OBJ);
-    
-            return [
-                'data' => [
-                    'results' => $results,
-                    'total_records' => $total,
-                    'items_per_page' => $itemsPerPage,
-                    'page' => $page,
-                ]
-            ];
 
+    public static function getDealIdsByAssignedPostEditors(int $userId) {
+        $postIds = DB::getPostIdsByEditorId($userId);
+
+        try {
+            if(!empty($postIds)) {
+                $dealsTable = DB::HOUZEZ_CRM_DEALS;
+                $strPostIds = implode(',', $postIds);
+                $query = "SELECT `deal_id` FROM {$dealsTable} WHERE `listing_id` IN ($strPostIds)";
+                $getDealIdsByPostIds = self::connect()->query($query);
+                $dealIds = array_column($getDealIdsByPostIds->fetchAll(PDO::FETCH_ASSOC), 'deal_id', 'numeric');
+                return $dealIds;
+            }
         } catch (PDOException $e) {
-            Logger::error("getAllDeals: SQL Error: {$e->getMessage()} - Query: {$query}", compact('userId', 'dealGroup', 'itemsPerPage', 'page'));
-            return null;
+            Logger::error("getDealIdsByAssignedPostEditors: SQL Error: {$e->getMessage()} - Query: {$query}", compact('userId', 'postIds'));
+            return [];
         }
     }
 
@@ -861,7 +1060,34 @@ class DB {
             return 0;
         }
     }    
-
+    
+    /**
+     * Retrieves all inquiries with pagination and filtering options.
+     * 
+     * This method fetches inquiries from the CRM system with various filtering capabilities
+     * and returns paginated results along with total count information.
+     *
+     * @param int $userId The user ID to filter inquiries by. If 0, returns inquiries for all users.
+     * @param string $keyword Search keyword to filter inquiries by enquiry_type.
+     * @param int $leadId Optional lead ID to filter inquiries for a specific lead. Default 0.
+     * @param int $itemsPerPage Number of items to return per page. Default 10.
+     * @param int $page Current page number. Default 1.
+     * 
+     * @return array|null Returns an array containing:
+     *                    - data: Array containing:
+     *                      - results: Array of inquiry objects
+     *                      - total_records: Total number of records matching filters
+     *                      - items_per_page: Number of items per page
+     *                      - page: Current page number
+     *                    Returns null on error
+     *
+     * @throws PDOException on database errors (caught internally)
+     * 
+     * Example usage:
+     * $inquiries = getAllInquiries(5, 'rental', 123, 20, 1);
+     * // Returns inquiries for user 5, filtered by 'rental' keyword,
+     * // for lead 123, 20 items per page, first page
+     */
     public static function getAllInquiries(int $userId, string $keyword, int $leadId = 0, int $itemsPerPage = 10, int $page = 1) {
         try {
             $table = self::HOUZEZ_CRM_ENQUIRIES;
@@ -935,6 +1161,184 @@ class DB {
         }
     }
     
-    
+    /**
+     * Executes a raw SQL query with optional parameter binding
+     * 
+     * @param string $query The SQL query to execute
+     * @param array $data Optional array of parameters to bind to the query. Keys should match parameter names in query.
+     * @param bool $isReturnStmt Whether to return the PDOStatement object (true) or fetch results (false)
+     * 
+     * @return mixed Returns one of:
+     *               - PDOStatement if $isReturnStmt is true
+     *               - Array of objects containing query results if successful
+     *               - false if query execution fails
+     * 
+     * @throws PDOException on database errors, which are caught and logged
+     * 
+     * Example usage:
+     * $results = executeRawQuery("SELECT * FROM users WHERE id = :id", [':id' => 5]);
+     * $stmt = executeRawQuery("SELECT * FROM users", [], true);
+     */
+    public static function executeRawQuery(string $query, array $data = [], bool $isReturnStmt = false) {
+        try {
+            $stmt = self::connect()->prepare($query);
+            if(!empty($data)) {
+                foreach ($data as $key => $value) {
+                    $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+                }
+            }
+            $stmt->execute();
+            if($isReturnStmt) {
+                return $stmt;
+            }
+            return $stmt->fetchAll(PDO::FETCH_OBJ);
+        } catch (PDOException $e) {
+            Logger::error("executeRaqQuery: SQL Error: {$e->getMessage()} - Query: {$query}");
+            return false;
+        }
+    }
+}
+
+
+trait OlderDB {
+    /**
+     * Retrieves all leads based on the provided parameters.
+     *
+     * @param int $userId The ID of the user. If 0, retrieves leads for all users.
+     * @param string $keyword The search keyword to filter leads by mobile, email, first name, or last name.
+     * @param int $itemsPerPage The number of leads to retrieve per page. Default is 10.
+     * @param int $page The page number to retrieve. Default is 1.
+     * @return array An array containing the results, total records, items per page, and current page.
+     */
+    public static function getAllLeads(int $userId, string $keyword, int $itemsPerPage = 10, int $page = 1) {
+        try {
+            $table = DB::HOUZEZ_CRM_LEADS;
+            $offset = ($page * $itemsPerPage) - $itemsPerPage;
+
+            // Start with a basic query
+            $query = "SELECT * FROM `{$table}`";
+
+            // Add user condition if userId is not zero
+            if ($userId) {
+                $query .= " WHERE user_id = :user_id";
+            }
+
+            // If keyword is present, modify the query to include search condition
+            if (!empty($keyword)) {
+                $keywordCondition = " (mobile LIKE :keyword OR email LIKE :keyword OR first_name LIKE :keyword OR last_name LIKE :keyword)";
+                $query .= ($userId) ? " AND" : " WHERE"; // Check if WHERE needs to be added
+                $query .= $keywordCondition;
+            }
+
+            // Prepare total count query
+            $totalQuery = "SELECT COUNT(*) FROM ({$query}) AS combined_table";
+            $stmt = DB::connect()->prepare($totalQuery);
+
+            if ($userId) {
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            }
+
+            if (!empty($keyword)) {
+                $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            $total = $stmt->fetchColumn();
+
+            // Prepare results query with limit and offset
+            $query .= " ORDER BY lead_id DESC LIMIT :offset, :items_per_page";
+            $stmt = DB::connect()->prepare($query);
+
+            if ($userId) {
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            }
+
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':items_per_page', $itemsPerPage, PDO::PARAM_INT);
+
+            if (!empty($keyword)) {
+                $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            $returnArray = [
+                'data' => [
+                    'results' => $results,
+                    'total_records' => $total,
+                    'items_per_page' => $itemsPerPage,
+                    'page' => $page,
+                ]
+            ];
+
+            return $returnArray;
+        } catch (PDOException $e) {
+            Logger::error("getAllLeads: SQL Error: {$e->getMessage()} - Query: {$query}", compact('userId', 'keyword', 'itemsPerPage', 'page'));
+            return null;
+        }
+    }
+ 
+    /**
+     * Retrieve all deals for a specific user and deal group with pagination.
+     *
+     * @param int $userId The ID of the user whose deals are to be retrieved.
+     * @param string $dealGroup The group of deals to retrieve (e.g., 'active', 'won', 'lost').
+     * @param array $inIDs An array of deal IDs to filter.
+     * @param int $itemsPerPage The number of deals to retrieve per page.
+     * @param int $page The page number to retrieve.
+     * @return array|null The results in an associative array or null on failure.
+     */
+    public static function getAllDeals(int $userId, string $dealGroup = 'active', $inIDs = [], int $itemsPerPage = 10, int $page = 1) {
+        try {
+            $table = DB::HOUZEZ_CRM_DEALS;
+            $offset = ($page - 1) * $itemsPerPage;
+
+            // Start with a basic query
+            if($userId) {
+                $baseQuery = "FROM `{$table}` WHERE (user_id = :user_id AND deal_group = :deal_group)";
+            } else {
+                $baseQuery = "FROM `{$table}` WHERE (user_id = :user_id OR deal_group = :deal_group)";
+            }
+
+            // Add OR condition for deal_id IN (...)
+            if (is_array($inIDs) && !empty($inIDs)) {
+                $inIDsString = implode(',', $inIDs); // Convert array to comma-separated string
+                $baseQuery .= " OR deal_id IN ({$inIDsString})";
+            }
+
+            // Prepare total count query
+            $totalQuery = "SELECT COUNT(*) {$baseQuery}";
+            $stmt = DB::connect()->prepare($totalQuery);
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':deal_group', $dealGroup, PDO::PARAM_STR);
+            $stmt->execute();
+            $total = $stmt->fetchColumn();
+
+            // Prepare results query with ORDER BY and LIMIT
+            $query = "SELECT * {$baseQuery} ORDER BY deal_id DESC LIMIT :offset, :items_per_page";
+            $stmt = DB::connect()->prepare($query);
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':deal_group', $dealGroup, PDO::PARAM_STR);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':items_per_page', $itemsPerPage, PDO::PARAM_INT);
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            // Logger::info("getAllDeals: ", compact('userId', 'dealGroup', 'itemsPerPage', 'page', 'inIDs', 'query'));
+            return [
+                'data' => [
+                    'results' => $results,
+                    'total_records' => $total,
+                    'items_per_page' => $itemsPerPage,
+                    'page' => $page,
+                ]
+            ];
+            
+        } catch (PDOException $e) {
+            Logger::error("getAllDeals: SQL Error: {$e->getMessage()} - Query: {$query}", compact('userId', 'dealGroup', 'itemsPerPage', 'page'));
+            return null;
+        }
+    }
 }
 ?>

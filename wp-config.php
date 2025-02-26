@@ -3,6 +3,27 @@
 require_once __DIR__ . '/main-config.php';
 
 /**
+ * Main Configuration File Import
+ * 
+ * This file (main-config.php) contains essential configuration variables:
+ * 
+ * @var array DATABASE_CONFIGURATION - Database connection parameters
+ *      - database: Database name
+ *      - username: Database user
+ *      - password: Database password
+ *      - host: Database host
+ *      - charset: Database character set
+ *      - collation: Database collation
+ * 
+ * @var string WP_HOME - WordPress home URL
+ * @var string WP_SITEURL - WordPress site URL
+ * @var bool PRODUCTION - Environment flag (true for production)
+ * 
+ * These variables are used throughout this configuration file to set up
+ * the WordPress environment and database connection settings.
+ *
+ * ------------------------------------------------------------------------------- * WORDPRESS * ---------------------------------------
+ * 
  * The base configuration for WordPress
  *
  * The wp-config.php creation script uses this file during the installation.
@@ -25,10 +46,10 @@ require_once __DIR__ . '/main-config.php';
  
 
 /** The home URL */
-define('WP_HOME', WP_HOME);
+if(!defined('WP_HOME')) define('WP_HOME', WP_HOME);
 
 /** The site URL */
-define('WP_SITEURL', WP_SITEURL);
+if(!defined('WP_SITEURL')) define('WP_SITEURL', WP_SITEURL);
 
 /** The name of the database for WordPress */
 define('DB_NAME', DATABASE_CONFIGURATION['database']);
@@ -59,7 +80,6 @@ if(!PRODUCTION && WP_DEBUG):
 	@ini_set('log_errors', 1);
 	@ini_set('display_errors', 1);
 endif;
-
 
 /**#@+
  * Authentication unique keys and salts.
