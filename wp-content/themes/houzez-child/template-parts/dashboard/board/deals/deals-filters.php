@@ -3,7 +3,7 @@
  * Deals filtering form template
  */
 
-global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $submit_filters, $active_deals, $won_deals, $lost_deals, $property_id, $lead_id, $agent_id, $deal_title, $next_action, $due_date, $lead_email, $lead_mobile, $tabs, $status;
+global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $submit_filters, $active_deals, $won_deals, $lost_deals, $property_id, $lead_id, $agent_id, $deal_title, $next_action, $due_date, $lead_email, $lead_mobile, $tabs, $status, $reset_url;
 ?>
 
 <!-- Deals Filter Modal -->
@@ -17,8 +17,9 @@ global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $
                 </button>
             </div>
             <div class="modal-body">
-                <form class="deals-filter-form" method="GET">
+                <form class="deals-filter-form" id="deals-filter-form" method="GET">
                     <!-- Keep existing parameters -->
+                    <input type="hidden" name="submit_filters" value="true">
                     <input type="hidden" name="hpage" value="<?php echo esc_attr($hpage); ?>">
                     
                     <div class="row">
@@ -128,7 +129,7 @@ global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $
                         <button type="submit" class="btn btn-primary mb-2 mb-sm-0">
                             <i class="houzez-icon icon-search mr-1"></i> <?php esc_html_e('Apply Filters', 'houzez'); ?>
                         </button>
-                        <a href="<?php echo esc_url(add_query_arg(['hpage' => $hpage, 'tab' => $deal_group], $dashboard_crm)); ?>" class="btn btn-success mb-2 mb-sm-0">
+                        <a href="<?= $reset_url; ?>" class="btn btn-success mb-2 mb-sm-0">
                             <i class="houzez-icon icon-reload mr-1"></i> <?php esc_html_e('Reset Filters', 'houzez'); ?>
                         </a>
                         <button type="button" class="btn btn-secondary mb-2 mb-sm-0" data-dismiss="modal">
@@ -190,6 +191,13 @@ global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $
             $('[clear-date-id]').on('click', function(){
                 var clearDateId = $(this).attr('clear-date-id');
                 $(clearDateId).val('');
+            });
+
+            $('#deals-nav-tab a').on('click', function(e){
+                e.preventDefault();
+                var action = $(this).attr('action');
+                $('[name="tab"]').val(action);
+                $('#deals-filter-form').submit();
             });
         });
     })(jQuery);

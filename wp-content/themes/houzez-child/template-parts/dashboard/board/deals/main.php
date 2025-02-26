@@ -9,7 +9,7 @@
  */
 @ini_set('display_errors', 1);
 
-global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $submit_filters, $active_deals, $won_deals, $lost_deals, $property_id, $lead_id, $agent_id, $deal_title, $next_action, $due_date, $next_actions, $lead_email, $lead_mobile, $tabs, $status;
+global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $submit_filters, $active_deals, $won_deals, $lost_deals, $property_id, $lead_id, $agent_id, $deal_title, $next_action, $due_date, $next_actions, $lead_email, $lead_mobile, $tabs, $status, $reset_url;
 
 $hpage = 'deals';
 $tabs = ['active', 'won', 'lost'];
@@ -42,7 +42,9 @@ $deals = DB::getDeals(
     $page
 ); 
 
-echo "<script>console.log(".json_encode(compact('has_permission', 'user_id', 'submit_filters', 'active_deals', 'won_deals', 'lost_deals', 'property_id', 'lead_id', 'agent_id', 'deal_title', 'next_action', 'due_date', 'lead_email', 'lead_mobile', 'deals')).");</script>";
+$reset_url = esc_url(add_query_arg(['tab'=> $tabs[0] , 'hpage'=> $hpage], $dashboard_crm));
+
+// echo "<script>console.log(".json_encode(compact('has_permission', 'user_id', 'active_deals', 'won_deals', 'lost_deals', 'property_id', 'lead_id', 'agent_id', 'deal_title', 'next_action', 'due_date', 'lead_email', 'lead_mobile', 'deals')).");</script>";
 
 
 /** * End Main Functionality but utilities going on */
@@ -62,11 +64,17 @@ echo "<script>console.log(".json_encode(compact('has_permission', 'user_id', 'su
 
             <!-- dashboard-header-right -->
             <div class="dashboard-header-right">
-                <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#dealsFilterModal">
+                <button type="button" class="btn btn-warning mr-3" data-toggle="modal" data-target="#dealsFilterModal">
                     <i class="houzez-icon icon-search mr-1"></i> <?php esc_html_e('Filter Deals', 'houzez'); ?>
                 </button>
 
-                <button class="btn btn-primary open-close-deal-panel ml-3">
+                <?php if($submit_filters == 'true'): ?>
+                    <a class="btn btn-dark mr-3" href="<?= $reset_url; ?>">
+                        <?php esc_html_e('Reset Filters', 'houzez'); ?>
+                    </a>
+                <?php endif; ?>
+
+                <button class="btn btn-primary open-close-deal-panel">
                     <?php esc_html_e('Add New Deal', 'houzez'); ?>
                 </button>
             </div>
@@ -130,10 +138,11 @@ echo "<script>console.log(".json_encode(compact('has_permission', 'user_id', 'su
         </div>
         
         <div class="deals-table-wrap">
-            <ul class="nav nav-pills deals-nav-tab" role="tablist">
+            <ul class="nav nav-pills deals-nav-tab" id="deals-nav-tab" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link active-deals <?= $deal_group == $tabs[0] ? 'active' : ''; ?>" 
                         href="<?= esc_url(add_query_arg(['tab'=> $tabs[0] , 'hpage'=> $hpage], $dashboard_crm)); ?>"
+                        action="<?= $tabs[0]; ?>"
                     >
                         <?= "Active Deals ({$deals['group_counts'][$tabs[0]]})"; ?>
                     </a>
@@ -141,6 +150,7 @@ echo "<script>console.log(".json_encode(compact('has_permission', 'user_id', 'su
                 <li class="nav-item">
                     <a class="nav-link won-deals <?= $deal_group == $tabs[1] ? 'active' : ''; ?>" 
                         href="<?= esc_url(add_query_arg(['tab'=> $tabs[1] , 'hpage'=> $hpage], $dashboard_crm)); ?>"
+                        action="<?= $tabs[1]; ?>"
                     >
                         <?= "Won Deals ({$deals['group_counts'][$tabs[1]]})"; ?>
                     </a>
@@ -148,6 +158,7 @@ echo "<script>console.log(".json_encode(compact('has_permission', 'user_id', 'su
                 <li class="nav-item lost-deals">
                     <a class="nav-link <?= $deal_group == $tabs[2] ? 'active' : ''; ?>" 
                         href="<?= esc_url(add_query_arg(['tab'=> $tabs[2] , 'hpage'=> $hpage], $dashboard_crm)); ?>"
+                        action="<?= $tabs[2]; ?>"
                     >
                         <?= "Lost Deals ({$deals['group_counts'][$tabs[2]]})"; ?>
                     </a>
@@ -221,7 +232,4 @@ echo "<script>console.log(".json_encode(compact('has_permission', 'user_id', 'su
 <section class="dashboard-side-wrap">
     <?php get_template_part('template-parts/dashboard/side-wrap'); ?>
 </section>
-
-<script>
-    
-</script>
+ 
