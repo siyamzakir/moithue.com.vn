@@ -690,6 +690,15 @@ class DB {
         return self::updateByColumns(self::LISTING_EDITORS, ['post_id' => $post_id], ['editor_ids' => json_encode($assigned_editors)]);
     }
 
+    public static function inArray(string $needle, $haystack): bool {
+        if(!is_array($haystack)) return false;
+
+        if(isset($haystack[$needle]) && !empty($haystack[$needle]) && $haystack[$needle]) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Get deals with filtering, pagination and related data from leads and properties
      * 
@@ -724,7 +733,8 @@ class DB {
             'agent_id' => 0,
             'deal_title' => '',
             'next_action' => '',
-            'due_date' => '',
+            'start_due_date' => '',
+            'end_due_date' => '',
             'deal_group'=> '',
             'lead_email'=> '',
             'lead_mobile'=> '',
@@ -733,6 +743,9 @@ class DB {
         $itemsPerPage = 10,
         $currentPage = 1, 
     ) {
+        // validate filter property
+        $validateFilterProperty = fn (string $key) => self::inArray($key, $filters);
+
         // Calculate offset based on current page and items per page
         $offset = ($currentPage - 1) * $itemsPerPage;
         
@@ -786,39 +799,40 @@ class DB {
         }
 
         // Add filter conditions based on provided filters
-        if (isset($filters['property_id']) && $filters['property_id']) {
+        if ($validateFilterProperty('property_id')) {
             $conditions[] = "AND d.listing_id = :property_id";
             $parameters[':property_id'] = $filters['property_id'];
         }
-        if (isset($filters['lead_id']) && $filters['lead_id']) {
+        if ($validateFilterProperty('lead_id')) {
             $conditions[] = "AND d.lead_id = :lead_id";
             $parameters[':lead_id'] = $filters['lead_id'];
         }
-        if (isset($filters['agent_id']) && $filters['agent_id']) {
+        if ($validateFilterProperty('agent_id')) {
             $conditions[] = "AND d.agent_id = :agent_id";
             $parameters[':agent_id'] = $filters['agent_id'];
         }
-        if (isset($filters['deal_title']) && $filters['deal_title']) {
+        if ($validateFilterProperty('deal_title')) {
             $conditions[] = "AND d.title LIKE CONCAT('%', :deal_title, '%')";
             $parameters[':deal_title'] = $filters['deal_title'];
         }
-        if (isset($filters['next_action']) && $filters['next_action']) {
+        if ($validateFilterProperty('next_action')) {
             $conditions[] = "AND d.next_action LIKE CONCAT('%', :next_action, '%')";
             $parameters[':next_action'] = $filters['next_action'];
         }
-        if (isset($filters['due_date']) && $filters['due_date']) {
-            $conditions[] = "AND d.action_due_date = :due_date";
-            $parameters[':due_date'] = $filters['due_date'];
+        if ($validateFilterProperty('start_due_date') && $validateFilterProperty('end_due_date')) {
+            $conditions[] = "AND d.action_due_date BETWEEN :start_due_date AND :end_due_date";
+            $parameters[':start_due_date'] = $filters['start_due_date'] . ' 00:00:00';
+            $parameters[':end_due_date'] = $filters['end_due_date'] . ' 23:59:59';
         }
-        if (isset($filters['status']) && $filters['status']) {
+        if ($validateFilterProperty('status')) {
             $conditions[] = "AND d.status LIKE CONCAT('%', :status, '%')";
             $parameters[':status'] = $filters['status'];
         }
-        if(isset($filters['lead_email']) && $filters['lead_email']) {
+        if ($validateFilterProperty('lead_email')) {
             $conditions[] = "AND l.email LIKE CONCAT('%', :lead_email, '%')";
             $parameters[':lead_email'] = $filters['lead_email'];
         }
-        if(isset($filters['lead_mobile']) && $filters['lead_mobile']) {
+        if($validateFilterProperty('lead_mobile')) {
             $conditions[] = "AND l.mobile LIKE CONCAT('%', :lead_mobile, '%')";
             $parameters[':lead_mobile'] = $filters['lead_mobile'];
         }
@@ -828,7 +842,7 @@ class DB {
         $countQuery .= "{$q1}";
 
         // Add deal group filter and pagination if specified
-        if(isset($filters['deal_group']) && $filters['deal_group']) {
+        if($validateFilterProperty('deal_group')) {
             $query .= "{$q1} AND d.deal_group = :deal_group ORDER BY d.deal_id DESC LIMIT :offset, :items_per_page";
             $parameters[':deal_group'] = $filters['deal_group'];
         } else {
@@ -919,11 +933,15 @@ class DB {
             'keyword' => '',
             'name' => '',
             'phone' => '',
-            'date' => '',
+            'start_date' => '',
+            'end_date' => '',
             'referrer' => '',
         ], 
         int $itemsPerPage = 10, 
-        int $page = 1) {
+        int $page = 1
+    ) {
+        $validateFilterProperty = fn (string $key) => self::inArray($key, $filters);
+
         try {
             $table = self::HOUZEZ_CRM_LEADS;
             $offset = ($page * $itemsPerPage) - $itemsPerPage;
@@ -941,25 +959,26 @@ class DB {
             $parameters = [':user_id' => $userId, ':offset' => $offset, ':items_per_page' => $itemsPerPage];
 
             // If keyword is present, modify the query to include search condition
-            if (isset($filters['keyword']) && !empty($filters['keyword'])) {
+            if ($validateFilterProperty('keyword')) {
                 $query .= " AND (display_name LIKE :keyword OR mobile LIKE :keyword OR email LIKE :keyword OR first_name LIKE :keyword OR last_name LIKE :keyword)";
                 $parameters[':keyword'] = "%{$filters['keyword']}%";
             }
-            if (isset($filters['name']) && !empty($filters['name'])) {
+            if ($validateFilterProperty('name')) {
                 $query .= " AND (display_name LIKE :name)";
                 $parameters[':name'] = "%{$filters['name']}%"; 
             }
-            if(isset($filters['phone']) && !empty($filters['phone'])) {
+            if ($validateFilterProperty('phone')) {
                 $query .= " AND (mobile LIKE :phone OR home_phone LIKE :phone OR work_phone LIKE :phone)";
                 $parameters[':phone'] = "%{$filters['phone']}%";
             }
-            if(isset($filters['referrer']) && !empty($filters['referrer'])) {
+            if ($validateFilterProperty('referrer')) {
                 $query .= " AND (source LIKE :referrer)";
                 $parameters[':referrer'] = "%{$filters['referrer']}%";
             }
-            if(isset($filters['date']) && !empty($filters['date'])) {
-                $query .= " AND time = :date";
-                $parameters[':date'] = $filters['date'];
+            if ($validateFilterProperty('start_date') && $validateFilterProperty('end_date')) {
+                $query .= " AND time BETWEEN :start_date AND :end_date";
+                $parameters[':start_date'] = $filters['start_date'];
+                $parameters[':end_date'] = $filters['end_date'];
             }
 
             // Prepare results query with limit and offset

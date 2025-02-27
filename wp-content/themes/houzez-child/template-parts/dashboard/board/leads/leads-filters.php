@@ -2,16 +2,9 @@
 /**
  * Leads filtering form template
  */
-global $dashboard_crm, $hpage, $name, $phone, $date, $referrer;
+global $dashboard_crm, $hpage, $name, $phone, $start_date, $end_date, $referrer, $reset_url;
 
-?>
-
-<!-- Filter Button to Open Modal -->
-<!-- <div class="filter-button-wrap mb-3">
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#leadsFilterModal">
-        <i class="houzez-icon icon-search mr-1"></i> < ?php esc_html_e('Filter Leads', 'houzez'); ?>
-    </button>
-</div> -->
+?> 
 
 <!-- Leads Filter Modal -->
 <div class="modal fade" id="leadsFilterModal" tabindex="-1" role="dialog" aria-labelledby="leadsFilterModalLabel" aria-hidden="true">
@@ -52,16 +45,22 @@ global $dashboard_crm, $hpage, $name, $phone, $date, $referrer;
 
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label><?php esc_html_e('Date', 'houzez'); ?></label>
+                                <label><?php esc_html_e('Date ~ From: - To:', 'houzez'); ?></label>
                                 <div class="input-group">
-                                    <input type="date" class="form-control" 
-                                        id="date" 
-                                        name="date" 
-                                        value="<?= $date ?? ''; ?>"
+                                    <input type="date" class="form-control date" 
+                                        id="start_date" 
+                                        name="start_date" 
+                                        value="<?= $start_date ?? ''; ?>"
+                                        placeholder="00-00-00"
+                                    />
+                                    <input type="date" class="form-control date" 
+                                        id="end_date" 
+                                        name="end_date" 
+                                        value="<?= $end_date ?? ''; ?>"
                                         placeholder="YYYY-MM-DD"
                                     />
                                     <div class="input-group-append">
-                                        <button type="button" class="btn btn-light clear-date border" title="Clear Date" clear-date-id="#date">
+                                        <button type="button" class="btn btn-light clear-date border" title="Clear Date" clear-date-id=".date">
                                             <i class="fas fa-times text-danger"></i>
                                         </button>
                                     </div>
@@ -81,10 +80,10 @@ global $dashboard_crm, $hpage, $name, $phone, $date, $referrer;
                     </div>
                     
                     <div class="modal-footer flex-wrap">
-                        <button type="submit" class="btn btn-primary mb-2 mb-sm-0">
+                        <button type="submit" class="btn btn-primary mb-2 mb-sm-0" id="apply_filters" name="apply_filters" value="true">
                             <i class="houzez-icon icon-search mr-1"></i> <?php esc_html_e('Apply Filters', 'houzez'); ?>
                         </button>
-                        <a href="<?php echo esc_url(add_query_arg('hpage', $hpage, $dashboard_crm)); ?>" class="btn btn-success mb-2 mb-sm-0">
+                        <a href="<?= $reset_url; ?>" class="btn btn-success mb-2 mb-sm-0">
                             <i class="houzez-icon icon-reload mr-1"></i> <?php esc_html_e('Reset Filters', 'houzez'); ?>
                         </a>
                         <button type="button" class="btn btn-secondary mb-2 mb-sm-0" data-dismiss="modal">

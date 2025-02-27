@@ -9,7 +9,7 @@
  */
 @ini_set('display_errors', 1);
 
-global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $submit_filters, $active_deals, $won_deals, $lost_deals, $property_id, $lead_id, $agent_id, $deal_title, $next_action, $due_date, $next_actions, $lead_email, $lead_mobile, $tabs, $status, $reset_url;
+global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $submit_filters, $active_deals, $won_deals, $lost_deals, $property_id, $lead_id, $agent_id, $deal_title, $next_action, $start_due_date, $end_due_date, $lead_email, $lead_mobile, $tabs, $status, $reset_url;
 
 $hpage = 'deals';
 $tabs = ['active', 'won', 'lost'];
@@ -30,17 +30,30 @@ $agent_id = filter_input(INPUT_GET, 'agent_id', FILTER_VALIDATE_INT);
 
 $deal_title = filter_input(INPUT_GET, 'deal_title', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $next_action = filter_input(INPUT_GET, 'next_action', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$due_date = filter_input(INPUT_GET, 'due_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$start_due_date = filter_input(INPUT_GET, 'start_due_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$end_due_date = filter_input(INPUT_GET, 'end_due_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $lead_email = filter_input(INPUT_GET, 'lead_email', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $lead_mobile = filter_input(INPUT_GET, 'lead_mobile', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $status = filter_input(INPUT_GET, 'status', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 $deals = DB::getDeals(
-    $user_id, 
-    compact('property_id', 'lead_id', 'agent_id', 'deal_title', 'next_action', 'due_date', 'deal_group', 'lead_email', 'lead_mobile', 'status'),
-    $items_per_page, 
+    $user_id,
+    compact(
+        'property_id',
+        'lead_id', 
+        'agent_id',
+        'deal_title',
+        'next_action',
+        'start_due_date',
+        'end_due_date',
+        'deal_group',
+        'lead_email',
+        'lead_mobile',
+        'status'
+    ),
+    $items_per_page,
     $page
-); 
+);
 
 $reset_url = esc_url(add_query_arg(['tab'=> $tabs[0] , 'hpage'=> $hpage], $dashboard_crm));
 

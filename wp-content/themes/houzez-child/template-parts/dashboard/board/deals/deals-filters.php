@@ -3,7 +3,7 @@
  * Deals filtering form template
  */
 
-global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $submit_filters, $active_deals, $won_deals, $lost_deals, $property_id, $lead_id, $agent_id, $deal_title, $next_action, $due_date, $lead_email, $lead_mobile, $tabs, $status, $reset_url;
+global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $submit_filters, $active_deals, $won_deals, $lost_deals, $property_id, $lead_id, $agent_id, $deal_title, $next_action, $start_due_date, $end_due_date, $lead_email, $lead_mobile, $tabs, $status, $reset_url;
 ?>
 
 <!-- Deals Filter Modal -->
@@ -60,16 +60,22 @@ global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $
                         <!-- Filter deals by next action due date -->
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label><?php esc_html_e('Action Due Date', 'houzez'); ?></label>
+                                <label><?php esc_html_e('Action Due Date ~ From: - To:', 'houzez'); ?></label>
                                 <div class="input-group">
-                                    <input type="date" class="form-control" 
-                                        id="due_date" 
-                                        name="due_date" 
-                                        value="<?= $due_date ?? ''; ?>"
+                                    <input type="date" class="form-control due_date" 
+                                        id="start_due_date" 
+                                        name="start_due_date" 
+                                        value="<?= $start_due_date ?? ''; ?>"
+                                        placeholder="YYYY-MM-DD"
+                                    />
+                                    <input type="date" class="form-control due_date" 
+                                        id="end_due_date" 
+                                        name="end_due_date" 
+                                        value="<?= $end_due_date ?? ''; ?>"
                                         placeholder="YYYY-MM-DD"
                                     />
                                     <div class="input-group-append">
-                                        <button type="button" class="btn btn-light clear-date border" title="Clear Date" clear-date-id="#due_date">
+                                        <button type="button" class="btn btn-light clear-date border" title="Clear Date" clear-date-id=".due_date">
                                             <i class="fas fa-times text-danger"></i>
                                         </button>
                                     </div>
