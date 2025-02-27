@@ -77,8 +77,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : null;
     $author_id = isset($_POST['author_id']) ? intval($_POST['author_id']) : null;
      
-    $editor_ids = isset($_POST['editor_ids']) 
-        ? (is_array($_POST['editor_ids']) ? json_encode(array_map('intval', $_POST['editor_ids'])) : $_POST['editor_ids'])
+    $editor_ids = isset($_POST['editor_ids'])
+        ? (
+            is_array($_POST['editor_ids'])
+                ? json_encode(array_values(array_map('intval', $_POST['editor_ids'])))
+                : $_POST['editor_ids']
+        )
         : '[]';
 
     $new_data = [];
@@ -244,9 +248,10 @@ if (!empty($_GET['property_id'])) {
     }
 }
 
-
 /* Start Edited By AppsZone */
 $ids = DB::getPostIdsByEditorId($user_id);
+Logger::info("ids", compact('ids', 'user_id'));
+
 if(!$is_houzez_manager && !empty($ids)) {
     $default_author = DB::MAIN_ADMINISTRATOR_ID;
     
