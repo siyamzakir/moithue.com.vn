@@ -250,7 +250,7 @@ if (!empty($_GET['property_id'])) {
 
 /* Start Edited By AppsZone */
 $ids = DB::getPostIdsByEditorId($user_id);
-Logger::info("ids", compact('ids', 'user_id'));
+// Logger::info("ids", compact('ids', 'user_id'));
 
 if(!$is_houzez_manager && !empty($ids)) {
     $default_author = DB::MAIN_ADMINISTRATOR_ID;
