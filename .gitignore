@@ -10,3 +10,5 @@ logs/*.log
 *.tar.7z
 *.tar.lzma
 /zunk/
+/modules/models/
+/modules/config.php
