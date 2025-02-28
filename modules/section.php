@@ -13,7 +13,7 @@ final class Section extends DB {
         string $firstOption = "<option value='' hidden></option>",
     ) {        
         $optionsString = $firstOption;
-        $users = static::getAllUsers();
+        $users = static::getAllUsers(['ID', 'display_name']);
 
         foreach ($users as $user) {
             $display_name = "{$user['first_name']} {$user['last_name']}";
