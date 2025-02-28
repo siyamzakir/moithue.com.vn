@@ -386,20 +386,17 @@ if(!$is_houzez_manager && !empty($ids)) {
                 </button>
             </div>
             <div class="modal-body">
-                <form id="assign-editors-form" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>" method="POST"> 
-                    <div class="form-group">
-                        <label for="assign-editors-select">Select Editors</label>
-                        <select class="form-control" id="assign-editors-select" multiple 
-                            data-live-search="true" placeholder="please type to search" data-live-search-placeholder="search..."
-                            name="editor_ids[]"
-                        >
-                            <option value="" hidden disabled>Select Editors</option>
-                            <?php foreach ($users as $user) { 
-                                if(!in_array("administrator", $user->roles) && $user->ID != $user_id) { ?>
-                                    <option value="<?php echo $user->ID; ?>"><?php echo $user->display_name; ?></option>
-                            <?php } } ?>
-                        </select>
-                    </div>  
+                <form id="assign-editors-form" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>" method="POST">
+                    <?= Section::userSelectBox(
+                        'editor_ids[]', 
+                        'Select Editor', 
+                        'Type to find here...', 
+                        [
+                            'selectClass' => 'bs-select-hidden', 
+                            'select'=> 'data-size="10" id="assign-editors-select" multiple',
+                        ]
+                    ); ?>
+
                     <input type="hidden" id="post_meta" name="post_meta">
                     <input type="hidden" id="user_id" name="user_id">
                     <input type="hidden" id="post_id" name="post_id">
@@ -407,7 +404,7 @@ if(!$is_houzez_manager && !empty($ids)) {
                     
                     <!-- Set the button to right align -->
                     <div class="text-right">
-                        <button type="submit" class="btn btn-success">Update Managers</button>
+                        <button type="submit" class="btn btn-success">Update Editors</button>
                     </div>
                 </form>
             </div>

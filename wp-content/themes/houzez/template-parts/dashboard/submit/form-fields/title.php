@@ -28,7 +28,4 @@ $property_title_placeholder = houzez_option('cl_prop_title_plac', 'Enter your pr
 		<?php echo $length; ?> type="text"
 		<?php houzez_required_field_2('title'); ?> 
 	/>
-</div>
-<script>
-	console.log(<?php echo json_encode(compact('property_title_limit', 'enable_title_limit', 'is_limit', 'length', 'property_data')); ?>);
-</script>
+</div> 

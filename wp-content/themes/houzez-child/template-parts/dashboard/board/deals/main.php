@@ -56,15 +56,8 @@ $deals = DB::getDeals(
 );
 
 $reset_url = esc_url(add_query_arg(['tab'=> $tabs[0] , 'hpage'=> $hpage], $dashboard_crm));
-
-// echo "<script>console.log(".json_encode(compact('has_permission', 'user_id', 'active_deals', 'won_deals', 'lost_deals', 'property_id', 'lead_id', 'agent_id', 'deal_title', 'next_action', 'due_date', 'lead_email', 'lead_mobile', 'deals')).");</script>";
-
-
+ 
 /** * End Main Functionality but utilities going on */
-
-
-/** * Start Houzez's Default Functionality */
-
 ?>
 
 <header class="header-main-wrap dashboard-header-main-wrap">

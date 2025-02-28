@@ -173,10 +173,34 @@ class DB {
      *               an exception will be thrown.
      */
     public static function getAllUsers(array $columns = ['*']) {
-        $query = "SELECT " . implode(', ', $columns) . " FROM wp_users";
-        $stmt = self::connect()->prepare($query);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $table = self::USERS;
+            $metaTable = self::USER_META;
+            
+            // If columns array only contains '*', replace with specific user table columns
+            if ($columns === ['*']) {
+                $cols = "u.*";
+            } else {
+                $cols = "u." . implode(', u.', $columns);
+            }
+            
+            // in here u=user & um=user_meta
+            $query = "SELECT {$cols},
+                MAX(CASE WHEN um.meta_key = 'first_name' THEN um.meta_value END) as first_name,
+                MAX(CASE WHEN um.meta_key = 'last_name' THEN um.meta_value END) as last_name
+            FROM {$table} u
+            LEFT JOIN {$metaTable} um ON u.ID = um.user_id
+            WHERE um.meta_key IN ('first_name', 'last_name')
+            GROUP BY u.ID
+            ORDER BY u.display_name ASC";
+            
+            $stmt = self::connect()->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            Logger::error("getAllUsers: SQL Error: {$e->getMessage()} - Query: {$query}");
+            return [];
+        }
     }
 
     /**
@@ -197,14 +221,30 @@ class DB {
      * @return array|false Returns an associative array of the first matching record or false on failure.
      *                     If no records match the conditions, an empty array is returned.
      */
-    public static function findById(string $table, int $id, string $by = 'latest') {
-        $query = "SELECT * FROM `{$table}` WHERE `id` = ? LIMIT 1";
-        if ($by === 'latest') {
-            $query = "SELECT * FROM `{$table}` ORDER BY `id` DESC LIMIT 1";
+    public static function findById(string $table, array|int $id, array $columns = ['*'], string $by = 'latest') {
+        try {
+            $idCol = 'ID';
+            $idVal = $id;
+
+            if(is_array($id)) {
+                $idCol = array_keys($id)[0];
+                $idVal = array_values($id)[0];
+            }
+
+            $cols = implode(', ', $columns);
+            $query = "SELECT {$cols} FROM `{$table}` WHERE `{$idCol}` = ? LIMIT 1";
+
+            if ($by === 'latest') {
+                $query = "SELECT {$cols} FROM `{$table}` WHERE `{$idCol}` = ? ORDER BY `{$idCol}` DESC LIMIT 1";
+            }
+
+            $stmt = self::connect()->prepare($query);
+            $stmt->execute([$idVal]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e){
+            Logger::info("SQL Error ~ Query: {$e->getMessage()}", compact('table', 'id', 'columns', 'by', 'query'));
+            return false;
         }
-        $stmt = self::connect()->prepare($query);
-        $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     /**

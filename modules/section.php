@@ -16,21 +16,28 @@ final class Section extends DB {
         $users = static::getAllUsers();
 
         foreach ($users as $user) {
+            $display_name = "{$user['first_name']} {$user['last_name']}";
+            if(empty(trim($display_name))) $display_name = $user['display_name'];
+
             if(in_array($user['ID'], $selectedIds)) {
-                $optionsString .= "<option value='{$user['ID']}' selected>{$user['display_name']}</option>";
+                $optionsString .= "<option value='{$user['ID']}' selected>{$display_name}</option>";
             } else {
-                $optionsString .= "<option value='{$user['ID']}'>{$user['display_name']}</option>";
+                $optionsString .= "<option value='{$user['ID']}'>{$display_name}</option>";
             }
         }
 
         $divAttr = isset($attributes['div']) ? $attributes['div'] : '';
         $labelAttr = isset($attributes['label']) ? $attributes['label'] : '';
         $selectAttr = isset($attributes['select']) ? $attributes['select'] : '';
+        $selectClass = isset($attributes['selectClass']) ? $attributes['selectClass'] : '';
 
         return "
             <div class='form-group' {$divAttr}>
                 <label for='{$name}' {$labelAttr}>{$title}</label>
-                <select name='{$name}' class='selectpicker form-control bs-select-hidden' title='{$placeholder}' data-live-search='{$search}' {$selectAttr}>
+                <select name='{$name}' 
+                    class='selectpicker form-control bs-select-hidden {$selectClass}' 
+                    title='{$placeholder}' data-live-search='{$search}' {$selectAttr}
+                >
                     {$optionsString}
                 </select>
             </div>
