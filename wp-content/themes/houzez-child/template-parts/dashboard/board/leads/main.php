@@ -9,6 +9,9 @@
  * Start From Now
  */
 
+// enable error reporting in development mode
+if(!PRODUCTION) @ini_set('display_errors', 1);
+
 global $dashboard_crm, $hpage, $name, $phone, $start_date, $end_date, $referrer, $reset_url;
 
 // handle message from response

@@ -7,7 +7,9 @@
  * 
  * Start From Now
  */
-@ini_set('display_errors', 1);
+
+ // enable error reporting in development mode
+if(!PRODUCTION) @ini_set('display_errors', 1);
 
 global $dashboard_crm, $has_permission, $user_id, $hpage, $deal_group, $deals, $submit_filters, $active_deals, $won_deals, $lost_deals, $property_id, $lead_id, $agent_id, $deal_title, $next_action, $start_due_date, $end_due_date, $lead_email, $lead_mobile, $tabs, $status, $reset_url;
 
