@@ -1,0 +1,5 @@
+{
+    "editor.fontLigatures": true,
+    // Optional: specify a font that supports ligatures
+    "editor.fontFamily": "Fira Code"
+}

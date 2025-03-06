@@ -14,8 +14,8 @@ const PRODUCTION = true;
 */
 const DATABASE_PASSWORD = ['', 'Siy@mcse@30'];
 const DATABASE_HOST = ['localhost', '127.0.0.1'];
-const DATABASE_USER = ['root', 'u472312318_moithue'];
-const DATABASE_NAME = ['apz_moithue', 'u472312318_moithue'];
+const DATABASE_USER = ['root', 'u989415759_moithue'];
+const DATABASE_NAME = ['apz_moithue', 'u989415759_moithue'];
 
 const DATABASE_DRIVER = ['mysql', 'mysql'];
 const DATABASE_CHARSET = ['utf8', 'utf8'];

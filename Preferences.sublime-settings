@@ -1,0 +1,5 @@
+{
+    "font_options": ["dlig", "ss01", "zero"],
+    // Optional: specify a font that supports ligatures
+    "font_face": "Fira Code"
+}
